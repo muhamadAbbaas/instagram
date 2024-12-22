@@ -144,6 +144,11 @@ class AppCubit extends Cubit<AppState> {
     }
   }
 
+  void removeImage() {
+    postImage = null;
+    emit(RemoveImageState());
+  }
+
   // creating new post
   void uploadPostImage(
     String? dateTime,
@@ -178,7 +183,8 @@ class AppCubit extends Cubit<AppState> {
     String? caption,
     String? postImage,
   }) {
-    PostModel postModel = PostModel(
+    // Create the post model without the postId initially
+    postModel = PostModel(
       fullName: userModel!.fullName,
       userName: userModel!.userName,
       userImage: userModel!.profileImage,
@@ -186,133 +192,85 @@ class AppCubit extends Cubit<AppState> {
       caption: caption,
       dateTime: dateTime,
       postImage: postImage,
-      isLiked: false,
-      likeNum: 0,
     );
+
     emit(CreatePostLoadingState());
+
+    // Add the post to Firestore
     FirebaseFirestore.instance
         .collection('posts')
-        .add(postModel.toMap())
+        .add(postModel!.toMap())
         .then((value) {
-      emit(CreatePostSuccessState());
+      // Once the post is added, Firestore returns a document reference with an ID
+      String postId = value.id;
+
+      // Update the post model with the postId
+      postModel = PostModel(
+        fullName: userModel!.fullName,
+        userName: userModel!.userName,
+        userImage: userModel!.profileImage,
+        uId: userModel!.uId,
+        caption: caption,
+        dateTime: dateTime,
+        postImage: postImage,
+        postId: postId, // Include the postId
+      );
+
+      // Save the updated post (with postId) back to Firestore
+      FirebaseFirestore.instance
+          .collection('posts')
+          .doc(postId)
+          .update(postModel!.toMap())
+          .then((_) {
+        emit(CreatePostSuccessState());
+        getPosts();
+      }).catchError((error) {
+        emit(CreatePostErrorState());
+      });
     }).catchError((error) {
       emit(CreatePostErrorState());
     });
   }
 
-  void removeImage() {
-    postImage = null;
-    emit(RemoveImageState());
-  }
-
-  List<PostModel> postsList = [];
-  List<String> postsId = [];
-  List<int> likes = [];
-
-  void getPosts() {
-    FirebaseFirestore.instance.collection('posts').get().then((value) {
-      value.docs.forEach(
-        (element) {
-          postsId.add(element.id);
-          postsList.add(PostModel.fromJson(element));
-          element.reference.collection('likes').get().then((value) {
-            likes.add(value.docs.length);
-          }).catchError((error) {
-            print(error);
-          });
-        },
-      );
-      emit(GetPostsSuccessState());
-    }).catchError((error) {
-      print(error);
-      emit(GetPostsErrorState());
-    });
-  }
-
-  void postLikes({
-    String? postId,
-    bool? isLiked,
-    int? likeNum,
-  }) {
-    FirebaseFirestore.instance
-        .collection('posts')
-        .doc(postId)
-        .collection('likes')
-        .doc(userModel!.uId)
-        .set(
-      {'likes': true},
-    ).then(
-      (value) {
-        toggleLike(
-          isLiked: isLiked,
-          likeNum: likeNum,
-          postId: postId,
-        );
-        emit(LikePostsSuccessState());
-      },
-    ).catchError(
-      (error) {
-        print(error);
-        emit(LikePostsErrorState());
-      },
-    );
-  }
-
-  void toggleLike({
-    bool? isLiked,
-    int? likeNum,
-    String? postId,
-  }) async {
-    if (isLiked == true) {
-      isLiked = false;
-      likeNum = likeNum! - 1;
-      updatePost(
-        postId: postId,
-        isLiked: isLiked,
-        likeNum: likeNum,
-      );
-      emit(PostDislikedState());
+  void getPosts() async {
+    emit(PostLoading());
+    try {
+      final snapshot =
+          await FirebaseFirestore.instance.collection('posts').get();
+      final posts =
+          snapshot.docs.map((doc) => PostModel.fromJson(doc.data())).toList();
+      emit(PostLoaded(posts: posts));
+    } catch (e) {
+      emit(PostError(e.toString()));
     }
-    isLiked = true;
-    likeNum = likeNum! + 1;
-    updatePost(
-      postId: postId,
-      isLiked: isLiked,
-      likeNum: likeNum,
-    );
-    emit(PostLikedState());
   }
 
-  void updatePost({
-    String? userName,
-    String? fullName,
-    String? caption,
-    String? postImage,
-    bool? isLiked,
-    int? likeNum,
-    String? postId,
-  }) async {
-     postModel = PostModel(
-      userName: userName ?? userModel!.userName,
-      fullName: fullName ?? userModel!.fullName,
-      uId: userModel!.uId,
-      caption: caption ?? postModel!.caption,
-      dateTime: postModel!.dateTime,
-      userImage: userModel!.profileImage,
-      postImage: postImage,
-      isLiked: isLiked ?? postModel!.isLiked,
-      likeNum: likeNum ?? postModel!.likeNum,
-    );
-    FirebaseFirestore.instance
-        .collection('posts')
-        .doc(postId)
-        .update(postModel!.toMap())
-        .then((value) {
-          getPosts();
-        })
-        .catchError((error) {
-      emit(UpdatePostErrorState());
-    });
+  void toggleLike(PostModel post, String userId) async {
+    final postRef =
+        FirebaseFirestore.instance.collection('posts').doc(post.postId);
+    final isLiked = post.likes!.contains(userId);
+    try {
+      if (isLiked) {
+        // Unlike the post
+        await postRef.update({
+          'likes': FieldValue.arrayRemove([userId]),
+          'likeCount': FieldValue.increment(-1),
+        });
+        post.likes!.remove(userId);
+        post.likeCount = (post.likeCount ?? 0) - 1;
+      } else {
+        // Like the post
+        await postRef.update({
+          'likes': FieldValue.arrayUnion([userId]),
+          'likeCount': FieldValue.increment(1),
+        });
+        post.likes!.add(userId);
+        post.likeCount = (post.likeCount ?? 0) + 1;
+      }
+       emit(PostUpdatedSuccessfully());
+    } catch (e) {
+      emit(PostError(e.toString()));
+    }
   }
 
   List<UserModel> usersList = [];
@@ -394,7 +352,6 @@ class AppCubit extends Cubit<AppState> {
       print(error);
       emit(SendMessageErrorState());
     });
-
     //set receiver chat
     FirebaseFirestore.instance
         .collection('userInfo')
@@ -437,7 +394,6 @@ class AppCubit extends Cubit<AppState> {
   }
 
   //                                       ...... Story Section ......
-
   File? storyImage;
   Future<void> pickStoryImage() async {
     emit(PickedStoryImageLoadingState());
@@ -488,6 +444,7 @@ class AppCubit extends Cubit<AppState> {
       uId: userModel!.uId,
       dateTime: dateTime,
       storyImage: storyImage,
+      hasStory: true,
     );
     emit(CreateStoryLoadingState());
     FirebaseFirestore.instance
@@ -495,30 +452,48 @@ class AppCubit extends Cubit<AppState> {
         .add(storyModel.toMap())
         .then((value) {
       emit(CreateStorySuccessState());
+      getStories();
     }).catchError((error) {
       print(error);
       emit(CreateStoryErrorState());
     });
   }
 
-  List<StoryModel> storiesList = [];
-  List<StoryModel> ownerStoriesList = [];
+  void getStories() async {
+    try {
+      emit(GetStoriesLoadingState());
+      final snapshot =
+          await FirebaseFirestore.instance.collection('stories').get();
 
-  void getStories() {
-    FirebaseFirestore.instance.collection('stories').get().then((value) {
-      value.docs.forEach(
-        (element) {
-          if (element['uId'] == userModel!.uId) {
-            ownerStoriesList.add(StoryModel.fromJson(element));
-          }
-          storiesList.add(StoryModel.fromJson(element));
-        },
-      );
-      emit(GetStoriesSuccessState());
-    }).catchError((error) {
-      print(error);
+      // Map Firebase data to StoryModel
+      List<StoryModel> stories = snapshot.docs.map((doc) {
+        return StoryModel.fromJson(doc.data());
+      }).toList();
+
+      // Ensure current user is at the first index
+      final accountOwnerIndex =
+          stories.indexWhere((story) => story.uId == userModel!.uId);
+      if (accountOwnerIndex != -1) {
+        final ownerStory = stories.removeAt(accountOwnerIndex);
+        stories.insert(0, ownerStory);
+      } else {
+        stories.insert(
+          0,
+          StoryModel(
+            uId: userModel!.uId,
+            userName: userModel!.userName,
+            userImage: userModel!.profileImage,
+            hasStory: false,
+            dateTime: '',
+            storyImage: '',
+          ),
+        );
+      }
+      emit(GetStoriesSuccessState(stories: stories));
+    } catch (e) {
+      print('Error fetching stories: $e');
       emit(GetStoriesErrorState());
-    });
+    }
   }
 }
 
@@ -527,6 +502,27 @@ class AppCubit extends Cubit<AppState> {
 
 
 
+
+
+  // List<StoryModel> storiesList = [];
+  // List<StoryModel> ownerStoriesList = [];
+
+  // void getStories() {
+  //   FirebaseFirestore.instance.collection('stories').get().then((value) {
+  //     value.docs.forEach(
+  //       (element) {
+  //         if (element['uId'] == userModel!.uId) {
+  //           ownerStoriesList.add(StoryModel.fromJson(element));
+  //         }
+  //         storiesList.add(StoryModel.fromJson(element));
+  //       },
+  //     );
+  //     emit(GetStoriesSuccessState());
+  //   }).catchError((error) {
+  //     print(error);
+  //     emit(GetStoriesErrorState());
+  //   });
+  // }
 
 
 
@@ -553,5 +549,116 @@ class AppCubit extends Cubit<AppState> {
   //     emit(UploadProfileImageErrorState());
   //   });
   // }
+
+  // List<PostModel> postsList = [];
+  // List<String> postsId = [];
+  // List<int> likes = [];
+
+  // void getPosts() async{
+  //   FirebaseFirestore.instance.collection('posts').get().then((value) {
+  //     value.docs.forEach(
+  //       (element) {
+  //         postsId.add(element.id);
+  //         postsList.add(PostModel.fromJson(element));
+  //         element.reference.collection('likes').get().then((value) {
+  //           likes.add(value.docs.length);
+  //         }).catchError((error) {
+  //           print(error);
+  //         });
+  //       },
+  //     );
+  //     emit(GetPostsSuccessState());
+  //   }).catchError((error) {
+  //     print(error);
+  //     emit(GetPostsErrorState());
+  //   });
+  // }
+
+   // void postLikes({
+  //   String? postId,
+  //   bool? isLiked,
+  //   int? likeNum,
+  // }) {
+  //   FirebaseFirestore.instance
+  //       .collection('posts')
+  //       .doc(postId)
+  //       .collection('likes')
+  //       .doc(userModel!.uId)
+  //       .set(
+  //     {'likes': true},
+  //   ).then(
+  //     (value) {
+  //       toggleLike(
+  //         isLiked: isLiked,
+  //         likeNum: likeNum,
+  //         postId: postId,
+  //       );
+  //       emit(LikePostsSuccessState());
+  //     },
+  //   ).catchError(
+  //     (error) {
+  //       print(error);
+  //       emit(LikePostsErrorState());
+  //     },
+  //   );
+  // }
+
+  // void toggleLike({
+  //   bool? isLiked,
+  //   int? likeNum,
+  //   String? postId,
+  // }) async {
+  //   if (isLiked!) {
+  //     isLiked = false;
+  //     likeNum = likeNum! - 1;
+  //     updatePost(
+  //       postId: postId,
+  //       isLiked: isLiked,
+  //       likeNum: likeNum,
+  //     );
+  //     emit(PostDislikedState());
+  //   }
+  //   isLiked = true;
+  //   likeNum = likeNum! + 1;
+  //   updatePost(
+  //     postId: postId,
+  //     isLiked: isLiked,
+  //     likeNum: likeNum,
+  //   );
+  //   emit(PostLikedState());
+  // }
+
+  // void updatePost({
+  //   String? userName,
+  //   String? fullName,
+  //   String? caption,
+  //   String? postImage,
+  //   bool? isLiked,
+  //   int? likeNum,
+  //   String? postId,
+  // }) async {
+  //    postModel = PostModel(
+  //     userName: userName ?? userModel!.userName,
+  //     fullName: fullName ?? userModel!.fullName,
+  //     uId: userModel!.uId,
+  //     caption: caption ?? postModel!.caption,
+  //     dateTime: postModel!.dateTime,
+  //     userImage: userModel!.profileImage,
+  //     postImage: postImage,
+  //     isLiked: isLiked ?? postModel!.isLiked,
+  //     likeNum: likeNum ?? postModel!.likeNum,
+  //   );
+  //   FirebaseFirestore.instance
+  //       .collection('posts')
+  //       .doc(postId)
+  //       .update(postModel!.toMap())
+  //       .then((value) {
+  //         getPosts();
+  //       })
+  //       .catchError((error) {
+  //     emit(UpdatePostErrorState());
+  //   });
+  // }
+
 
   

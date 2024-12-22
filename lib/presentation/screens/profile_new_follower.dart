@@ -1,10 +1,20 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first, use_super_parameters, must_be_immutable
 // ignore_for_file: use_key_in_widget_constructors, prefer_const_constructors, prefer_const_literals_to_create_immutables, sort_child_properties_last, sized_box_for_whitespace, avoid_unnecessary_containers
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+
+import 'package:instagram/logic/model/post/post_model.dart';
 import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
 import 'package:instagram/presentation/widgets/widgets.dart';
 
 class OtherProfile extends StatelessWidget {
+  //UserModel userModel;
+  PostModel postModel;
+  OtherProfile({
+    Key? key,
+    //required this.userModel,
+    required this.postModel,
+  }) : super(key: key);
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AppCubit, AppState>(
@@ -31,7 +41,7 @@ class OtherProfile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  'username',
+                  postModel.userName.toString(),
                   style: TextStyle(
                       color: Colors.black,
                       fontWeight: FontWeight.bold,
@@ -72,8 +82,11 @@ class OtherProfile extends StatelessWidget {
                         // Profile Picture
                         CircleAvatar(
                           radius: 40,
-                          backgroundImage: NetworkImage(
-                              'https://instagram.fcai2-1.fna.fbcdn.net/v/t51.2885-19/425756336_304986829251315_1659409867745947768_n.jpg?stp=dst-jpg_s150x150&_nc_ht=instagram.fcai2-1.fna.fbcdn.net&_nc_cat=103&_nc_ohc=5GEk0VSiaLwQ7kNvgGAS7Fg&_nc_gid=177ea48ca9f242639c98d02cd80ddb35&edm=AP4sbd4BAAAA&ccb=7-5&oh=00_AYAnzne2pN96EIvr11HO0jSOyFVmpT7KKGrf2ZcNsZ7UTg&oe=672CA661&_nc_sid=7a9f4b'),
+                          backgroundImage: postModel.userImage == null
+                              ? AssetImage('assets/images/download.jpg')
+                              : NetworkImage(
+                                  postModel.userImage.toString(),
+                                ),
                         ),
                         SizedBox(width: 16),
                         // Follower Counts
@@ -99,7 +112,7 @@ class OtherProfile extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Username',
+                            postModel.userName.toString(),
                             style: TextStyle(
                                 fontWeight: FontWeight.bold, fontSize: 16),
                           ),
@@ -226,7 +239,7 @@ class OtherProfile extends StatelessWidget {
                                   return Container(
                                     color: Colors.grey[300],
                                     child: Image.network(
-                                      'https://scontent.fcai2-2.fna.fbcdn.net/v/t1.6435-9/173494783_1738719962956021_346726158425536940_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=a5f93a&_nc_eui2=AeFapur8bcXOfkXxWMUV43ZaVju9Fek-bcdWO70V6T5tx_u__DgRmaBXu-QhgCHi9yZ_JMJYkvRipN25c86bJb1v&_nc_ohc=w7WvnpYfveAQ7kNvgGbi2mN&_nc_zt=23&_nc_ht=scontent.fcai2-2.fna&_nc_gid=Ay4KxVUnJ7ElfDsBfNKtHzh&oh=00_AYBQdbk_0xzmIs7zYreae34V4C1qB2sMNFP4W7sodUlRAw&oe=6756577F',
+                                      postModel.postImage.toString(),
                                       fit: BoxFit.cover,
                                     ),
                                   );

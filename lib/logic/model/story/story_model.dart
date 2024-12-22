@@ -1,12 +1,11 @@
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class StoryModel {
   String? userName;
   String? uId;
   String? dateTime;
   String? userImage;
   String? storyImage;
+  bool? hasStory;
 
   StoryModel({
     required this.userName,
@@ -14,15 +13,16 @@ class StoryModel {
     required this.dateTime,
     required this.userImage,
     required this.storyImage,
-
+    this.hasStory,
   });
 
-  StoryModel.fromJson(DocumentSnapshot<Map<String, dynamic>> json) {
+  StoryModel.fromJson(Map<String, dynamic>json) {
     userName = json['userName'];
     uId = json['uId'];
     dateTime = json['dateTime'];
     userImage = json['userImage'];
     storyImage = json['storyImage'];
+    hasStory = json['hasStory'] ?? false;
   }
 
   Map<String, dynamic> toMap() {
@@ -32,6 +32,7 @@ class StoryModel {
       'dateTime': dateTime,
       'userImage': userImage,
       'storyImage': storyImage,
+      'hasStory': hasStory,
     };
   }
 }

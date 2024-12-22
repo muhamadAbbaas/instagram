@@ -1,6 +1,3 @@
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-
 class PostModel {
   String? userName;
   String? fullName;
@@ -9,8 +6,9 @@ class PostModel {
   String? dateTime;
   String? userImage;
   String? postImage;
-  bool? isLiked;
-  int? likeNum;
+  String? postId;
+  int? likeCount;
+  List<String>? likes;
 
   PostModel({
     required this.userName,
@@ -20,11 +18,12 @@ class PostModel {
     required this.dateTime,
     required this.userImage,
     required this.postImage,
-    this.isLiked,
-    this.likeNum,
+    this.postId,
+    this.likeCount,
+    this.likes,
   });
 
-  PostModel.fromJson(DocumentSnapshot<Map<String, dynamic>> json) {
+  PostModel.fromJson(Map<String, dynamic> json) {
     userName = json['userName'];
     fullName = json['fullName'];
     uId = json['uId'];
@@ -32,8 +31,9 @@ class PostModel {
     dateTime = json['dateTime'];
     userImage = json['userImage'];
     postImage = json['postImage'];
-    isLiked = json['isLiked'];
-    likeNum = json['likeNum'];
+    postId = json['postId'] ?? '';
+    likeCount = json['likeCount'] ?? 0;
+    likes = List<String>.from(json['likes'] ?? []);
   }
 
   Map<String, dynamic> toMap() {
@@ -45,8 +45,9 @@ class PostModel {
       'dateTime': dateTime,
       'userImage': userImage,
       'postImage': postImage,
-      'isLiked': isLiked,
-      'likeNum': likeNum,
+      'postId': postId,
+      'likeCount': likeCount,
+      'likes': likes,
     };
   }
 }

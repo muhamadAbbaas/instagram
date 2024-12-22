@@ -100,7 +100,12 @@ final class CreateStorySuccessState extends AppState {}
 
 final class CreateStoryErrorState extends AppState {}
 
-final class GetStoriesSuccessState extends AppState {}
+final class GetStoriesLoadingState extends AppState {}
+
+final class GetStoriesSuccessState extends AppState {
+  List<StoryModel> stories;
+  GetStoriesSuccessState({required this.stories});
+}
 
 final class GetStoriesErrorState extends AppState {}
 
@@ -113,3 +118,19 @@ final class UpdatePostErrorState extends AppState {}
 final class PostDislikedState extends AppState {}
 
 final class PostLikedState extends AppState {}
+
+final class PostLoading extends AppState {}
+
+final class PostLoaded extends AppState {
+  final List<PostModel> posts;
+  PostLoaded({required this.posts});
+}
+
+final class PostError extends AppState {
+  final String error;
+  PostError(this.error);
+}
+
+final class PostUpdatedSuccessfully extends AppState {
+  
+}

@@ -22,7 +22,7 @@ import 'firebase_options.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await CacheHelper.init();
- cashedUId = CacheHelper.getData(key: 'uId') ?? '';
+  cashedUId = CacheHelper.getData(key: 'uId') ?? '';
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -37,8 +37,8 @@ void main() async {
   // }
   // widget = HomeLayoutScreen();
   runApp(MyApp(
-   // startWidget: widget,
-  ));
+      // startWidget: widget,
+      ));
 }
 
 class MyApp extends StatelessWidget {
@@ -73,7 +73,6 @@ class MyApp extends StatelessWidget {
           'home_page': (context) => HomeLayoutScreen(),
           'profile': (context) => ProfileScreen(),
           'profile_editing': (context) => ProfileEditing(),
-          'other_profile': (context) => OtherProfile(),
           'chat_list_screen': (context) => ChatListScreen(),
         },
       ),
