@@ -1,11 +1,6 @@
-// ignore_for_file: prefer_const_constructors, sized_box_for_whitespace, prefer_const_literals_to_create_immutables
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/data/local/cash_helper.dart';
 import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
-import 'package:instagram/presentation/screens/create_post_screen.dart';
-import 'package:instagram/presentation/widgets/widgets.dart';
 
 class HomeLayoutScreen extends StatelessWidget {
   const HomeLayoutScreen({super.key});
@@ -13,106 +8,36 @@ class HomeLayoutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<AppCubit, AppState>(
-      listener: (context, state) {
-        if (state is CreatePostScreenState) {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => CreatePostScreen(),
-              ));
-        }
-        if(state is LogoutSuccessState){
-          CacheHelper.deleteData(key: 'uId');
-        }
-      },
+      listener: (context, state) {},
       builder: (context, state) {
-        var cubit = AppCubit.get(context);
+        final appCubit = AppCubit.get(context);
+
         return Scaffold(
-          appBar: cubit.currentIndex == 0
-              ? AppBar(
-                  backgroundColor: Colors.white,
-                  title: Text(
-                    'Instagram',
-                    style: TextStyle(
-                      fontSize: 32,
-                      color: Colors.black,
-                    ),
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: Icon(
-                        size: 24,
-                        Icons.favorite_border,
-                        color: Colors.black,
-                      ),
-                      onPressed: () {},
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        size: 24,
-                        Icons.messenger_outline,
-                        color: Colors.black,
-                      ),
-                      onPressed: () {
-                        Navigator.pushNamed(context, 'chat_list_screen');
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        size: 24,
-                        Icons.add_box_outlined,
-                        color: Colors.black,
-                      ),
-                      onPressed: () {},
-                    ),
-                  ],
-                )
-              : cubit.currentIndex == 4
-                  ? AppBar(
-                      backgroundColor: Colors.white,
-                      elevation: 1,
-                      title: Text(
-                        '${cubit.userModel!.userName}',
-                        style: TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 22),
-                      ),
-                    )
-                  : AppBar(
-                      title: Text('Instagram'),
-                    ),
-          endDrawer: cubit.currentIndex==4?buildDrawer(context):null,
-          body: cubit.screens[cubit.currentIndex],
+          body: Stack(
+            children: [
+              appCubit.mainScreens[appCubit.currentIndex], // Main tab content
+              if (appCubit.currentOverlayScreen != null)
+                appCubit.currentOverlayScreen!, // Overlay screen
+            ],
+          ),
           bottomNavigationBar: BottomNavigationBar(
-            type: BottomNavigationBarType.fixed,
-            selectedItemColor: Colors.black,
-            unselectedItemColor: Colors.black26,
-            currentIndex: cubit.currentIndex,
-            onTap: (value) {
-              cubit.changeButtomNavIndex(value);
-            },
-            items: [
+            selectedItemColor:
+                Theme.of(context).bottomNavigationBarTheme.selectedItemColor,
+            unselectedItemColor:
+                Theme.of(context).bottomNavigationBarTheme.unselectedItemColor,
+            backgroundColor:
+                Theme.of(context).bottomNavigationBarTheme.backgroundColor,
+            currentIndex: appCubit.currentIndex,
+            onTap: appCubit.changeBottomNavIndex,
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+              BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
               BottomNavigationBarItem(
-                icon: Icon(Icons.home),
-                label: '',
-              ),
+                  icon: Icon(Icons.add_box_outlined), label: ''),
               BottomNavigationBarItem(
-                icon: Icon(Icons.search),
-                label: '',
-              ),
+                  icon: Icon(Icons.favorite_border), label: ''),
               BottomNavigationBarItem(
-                icon: Icon(Icons.add_box_outlined),
-                label: '',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.favorite_border),
-                label: '',
-              ),
-              BottomNavigationBarItem(
-                icon: Icon(Icons.person_outline),
-                label: '',
-              ),
+                  icon: Icon(Icons.person_outline), label: ''),
             ],
           ),
         );

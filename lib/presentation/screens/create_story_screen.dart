@@ -1,22 +1,28 @@
-// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_const_constructors, avoid_print
+// ignore_for_file: use_key_in_widget_constructors, library_private_types_in_public_api, prefer_const_constructors, avoid_print, must_be_immutable
 
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
+import 'package:instagram/logic/model/user/user_model.dart';
+import 'package:instagram/logic/state_managments/story_cubit/story_cubit.dart';
 
-// ignore: must_be_immutable
-class ShareStoryScreen extends StatelessWidget {
-  ShareStoryScreen({super.key, required this.selectedImage});
+class CreateStoryScreen extends StatelessWidget {
   final TextEditingController _captionController = TextEditingController();
-  File selectedImage;
+  final File selectedImage;
+  final UserModel userModel;
+
+  CreateStoryScreen({
+    super.key,
+    required this.selectedImage,
+    required this.userModel,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AppCubit, AppState>(
+    return BlocConsumer<StoryCubit, StoryState>(
       listener: (context, state) {
-        if (state is UploadStoryImageLoadingState) {
+        if (state is StoryCreatingState) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -33,7 +39,7 @@ class ShareStoryScreen extends StatelessWidget {
             ),
           );
         }
-        if (state is CreateStorySuccessState) {
+        if (state is StoryCreatedState) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -52,7 +58,7 @@ class ShareStoryScreen extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        var cubit = AppCubit.get(context);
+        var cubit = StoryCubit.get(context);
         return Scaffold(
           appBar: AppBar(
             backgroundColor: Colors.white,
@@ -64,8 +70,10 @@ class ShareStoryScreen extends StatelessWidget {
               TextButton(
                 onPressed: () {
                   cubit.uploadStoryImage(
-                    dateTime: DateTime.now().toString(),
-                    storyImage: cubit.storyImage,
+                    userId: userModel.uid!,
+                    userName: userModel.userName!,
+                    userImage: userModel.profileImage!,
+                    storyImage: selectedImage,
                   );
                   Navigator.pushReplacementNamed(context, 'home_page');
                 },

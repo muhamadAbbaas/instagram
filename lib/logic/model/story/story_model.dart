@@ -1,38 +1,45 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class StoryModel {
-  String? userName;
-  String? uId;
-  String? dateTime;
-  String? userImage;
-  String? storyImage;
-  bool? hasStory;
+  final String storyId;
+  final String userId;
+  final String userName;
+  final String userImage;
+  final String storyImage;
+  final DateTime timestamp;
+  final bool isWatched;
 
   StoryModel({
+    required this.storyId,
+    required this.userId,
     required this.userName,
-    required this.uId,
-    required this.dateTime,
     required this.userImage,
     required this.storyImage,
-    this.hasStory,
+    required this.timestamp,
+    required this.isWatched,
   });
 
-  StoryModel.fromJson(Map<String, dynamic>json) {
-    userName = json['userName'];
-    uId = json['uId'];
-    dateTime = json['dateTime'];
-    userImage = json['userImage'];
-    storyImage = json['storyImage'];
-    hasStory = json['hasStory'] ?? false;
+  factory StoryModel.fromJson(Map<String, dynamic> json) {
+    return StoryModel(
+      storyId: json['storyId'],
+      userId: json['userId'],
+      userName: json['userName'],
+      userImage: json['userImage'],
+      storyImage: json['storyImage'],
+      timestamp: (json['timestamp'] as Timestamp).toDate(),
+      isWatched: json['isWatched'],
+    );
   }
 
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toJson() {
     return {
+      'storyId': storyId,
+      'userId': userId,
       'userName': userName,
-      'uId': uId,
-      'dateTime': dateTime,
       'userImage': userImage,
       'storyImage': storyImage,
-      'hasStory': hasStory,
+      'timestamp': timestamp,
+      'isWatched': isWatched,
     };
   }
 }

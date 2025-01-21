@@ -2,8 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/logic/state_managments/auth_cubit/auth_cubit.dart';
-import 'package:instagram/data/local/cash_helper.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
+import 'package:instagram/presentation/screens/home_layout_screen.dart';
 
 class LoginScreen extends StatelessWidget {
   LoginScreen({super.key});
@@ -14,17 +15,21 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AuthCubit, AuthState>(
+    return BlocConsumer<UserCubit, UserState>(
       listener: (context, state) {
-        if (state is LoginSuccessState ){
-          CacheHelper.setData(
-            key: 'uId',
-            value: state.uId,
-          ).then((value) {
-            Navigator.pushReplacementNamed(context, 'home_page');
-          });
+        if (state is LoginSuccessState) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) {
+              final userCubit = BlocProvider.of<UserCubit>(context);
+              userCubit.getUserData(userCubit.auth.currentUser?.uid ?? "");
+              return HomeLayoutScreen();
+            }),
+          );
         }
         if (state is LoginErrorState) {
+          ScaffoldMessenger.of(context)
+              .showSnackBar(SnackBar(content: Text(state.error)));
           print(state.error);
         }
       },
@@ -95,7 +100,7 @@ class LoginScreen extends StatelessWidget {
                       ),
                       onPressed: () {
                         if (formKey.currentState!.validate()) {
-                          AuthCubit.get(context).userLogin(
+                          UserCubit.get(context).login(
                             email: emailController.text,
                             password: passwordController.text,
                           );

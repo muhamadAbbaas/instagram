@@ -3,7 +3,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatModel {
- String? senderId;
+  String? senderId;
   String? reciverId;
   String? dateTime;
   String? message;
@@ -15,11 +15,13 @@ class ChatModel {
     this.message,
   });
 
-  ChatModel.fromJson(DocumentSnapshot<Map<String, dynamic>> json) {
-    senderId = json['senderId'];
-    reciverId = json['reciverId'];
-    dateTime = json['dateTime'];
-    message = json['message'];
+  factory ChatModel.fromJson(DocumentSnapshot<Map<String, dynamic>> json) {
+    return ChatModel(
+      senderId: json['senderId'],
+      reciverId: json['reciverId'],
+      dateTime: json['dateTime'],
+      message: json['message'],
+    );
   }
 
   Map<String, dynamic> toMap() {

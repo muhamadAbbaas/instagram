@@ -2,23 +2,25 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
+import 'package:instagram/logic/model/user/user_model.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
 
-class ProfileEditing extends StatelessWidget {
-  const ProfileEditing({super.key});
-
+class EditProfileScreen extends StatelessWidget {
+  final UserModel? userModel;
+  final TextEditingController fullNameController = TextEditingController();
+  final TextEditingController userNameController = TextEditingController();
+  final TextEditingController webSiteController = TextEditingController();
+  final TextEditingController bioController = TextEditingController();
+  final TextEditingController emailController = TextEditingController();
+  final TextEditingController phoneController = TextEditingController();
+  final TextEditingController genderController = TextEditingController();
+  EditProfileScreen({super.key, this.userModel});
   @override
   Widget build(BuildContext context) {
-    late TextEditingController fullNameController = TextEditingController();
-    late TextEditingController userNameController = TextEditingController();
-    late TextEditingController webSiteController = TextEditingController();
-    late TextEditingController bioController = TextEditingController();
-    late TextEditingController emailController = TextEditingController();
-    late TextEditingController phoneController = TextEditingController();
-    late TextEditingController genderController = TextEditingController();
-    return BlocConsumer<AppCubit, AppState>(
+    return BlocConsumer<UserCubit, UserState>(
       listener: (context, state) {
-        if (state is UploadProfileImageLoadingState) {
+        if (state is ProfileImageUploadingState) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -35,7 +37,7 @@ class ProfileEditing extends StatelessWidget {
             ),
           );
         }
-        if (state is UploadProfileImageSuccessState) {
+        if (state is ProfileImageUploadErrorState) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
@@ -54,11 +56,14 @@ class ProfileEditing extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        var cubit = AppCubit.get(context);
-        fullNameController.text = cubit.userModel!.fullName!;
-        userNameController.text = cubit.userModel!.userName!;
-        emailController.text = cubit.userModel!.email!;
-        bioController.text = cubit.userModel!.bio??'';
+        var cubit = UserCubit.get(context);
+        fullNameController.text = cubit.currentUser!.fullName!;
+        userNameController.text = cubit.currentUser!.userName!;
+        emailController.text = cubit.currentUser!.email!;
+        webSiteController.text = cubit.currentUser!.website ?? '';
+        genderController.text = cubit.currentUser!.gender ?? '';
+        bioController.text = cubit.currentUser!.bio ?? '';
+        phoneController.text = cubit.currentUser!.phone ?? '';
         return Scaffold(
           appBar: AppBar(
             leading: Column(
@@ -91,13 +96,15 @@ class ProfileEditing extends StatelessWidget {
               TextButton(
                 onPressed: () {
                   cubit.updateUserData(
-                    userName: userNameController.text,
-                    bio: bioController.text,
-                    email: emailController.text,
-                    fullName: fullNameController.text,
-                    gender: genderController.text,
-                    phone: phoneController.text,
-                    website: webSiteController.text,
+                    updatedFields: {
+                      'userName': userNameController.text,
+                      'fullName': fullNameController.text,
+                      'bio': bioController.text,
+                      'email': emailController.text,
+                      'website': webSiteController.text,
+                      'phone': phoneController.text,
+                      'gender': genderController.text,
+                    },
                   );
                   Navigator.pop(context);
                 },
@@ -126,7 +133,7 @@ class ProfileEditing extends StatelessWidget {
                         image: DecorationImage(
                           fit: BoxFit.cover,
                           image: cubit.profileImage == null
-                              ? AssetImage('assets/images/download.jpg')
+                              ? NetworkImage(cubit.currentUser!.profileImage!)
                               : FileImage(cubit.profileImage!),
                         ),
                       ),
@@ -145,7 +152,9 @@ class ProfileEditing extends StatelessWidget {
                         if (cubit.profileImage != null)
                           TextButton(
                             onPressed: () {
-                              cubit.uploadProfileImage();
+                              cubit.uploadProfileImage(
+                                uid: cubit.currentUser!.uid!,
+                              );
                             },
                             child: Text('Upload profile photo'),
                           ),
@@ -174,7 +183,7 @@ class ProfileEditing extends StatelessWidget {
                                         start: 25),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        cubit.userModel!.fullName = value;
+                                        userModel!.fullName = value;
                                       },
                                       controller: fullNameController,
                                       keyboardType: TextInputType.text,
@@ -205,7 +214,7 @@ class ProfileEditing extends StatelessWidget {
                                         start: 25),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        cubit.userModel!.userName = value;
+                                        userModel!.userName = value;
                                       },
                                       controller: userNameController,
                                       keyboardType: TextInputType.text,
@@ -236,7 +245,7 @@ class ProfileEditing extends StatelessWidget {
                                         start: 25),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        cubit.userModel!.website = value;
+                                        userModel!.website = value;
                                       },
                                       controller: webSiteController,
                                       keyboardType: TextInputType.text,
@@ -267,7 +276,7 @@ class ProfileEditing extends StatelessWidget {
                                         start: 25),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        cubit.userModel!.bio = value;
+                                        userModel!.bio = value;
                                       },
                                       controller: bioController,
                                       keyboardType: TextInputType.text,
@@ -338,7 +347,7 @@ class ProfileEditing extends StatelessWidget {
                                           start: 25),
                                       child: TextField(
                                         onSubmitted: (value) {
-                                          cubit.userModel!.email = value;
+                                          userModel!.email = value;
                                         },
                                         controller: emailController,
                                         keyboardType: TextInputType.text,
@@ -370,7 +379,7 @@ class ProfileEditing extends StatelessWidget {
                                         start: 25),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        cubit.userModel!.phone = value;
+                                        userModel!.phone = value;
                                       },
                                       controller: phoneController,
                                       keyboardType: TextInputType.phone,
@@ -401,7 +410,7 @@ class ProfileEditing extends StatelessWidget {
                                         start: 25),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        cubit.userModel!.gender = value;
+                                        userModel!.gender = value;
                                       },
                                       controller: genderController,
                                       keyboardType: TextInputType.text,

@@ -1,25 +1,37 @@
-// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables, must_be_immutable, prefer_is_empty
+// ignore_for_file: unused_local_variable, must_be_immutable, prefer_const_declarations, prefer_const_constructors
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/logic/model/chat/chat_model.dart';
 import 'package:instagram/logic/model/user/user_model.dart';
-import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
+import 'package:instagram/logic/state_managments/chat_cubit/chat_cubit.dart';
+import 'package:instagram/logic/state_managments/chat_cubit/chat_state.dart';
+import 'package:instagram/logic/model/chat/chat_model.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
 
 class ChatScreen extends StatelessWidget {
-  ChatScreen({super.key, required this.model});
+  UserModel userModel;
+  UserModel currentUserModel;
 
-  UserModel model;
-  var messageController = TextEditingController();
+  ChatScreen({
+    super.key,
+    required this.userModel,
+    required this.currentUserModel,
+  });
+
+  final TextEditingController _messageController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
-    return Builder(
-      builder: (BuildContext context) {
-      AppCubit.get(context).getMessage(reciverId: model.uId!);
-      return BlocConsumer<AppCubit, AppState>(
+    return BlocProvider(
+      create: (_) => ChatCubit()
+        ..getMessages(
+          senderId: currentUserModel.uid!,
+          receiverId: userModel.uid!,
+        ),
+      child: BlocConsumer<ChatCubit, ChatState>(
         listener: (context, state) {},
         builder: (context, state) {
-          var cubit = AppCubit.get(context);
           return Scaffold(
             appBar: AppBar(
               backgroundColor: Colors.white,
@@ -35,13 +47,13 @@ class ChatScreen extends StatelessWidget {
                   CircleAvatar(
                     radius: 18,
                     backgroundImage: NetworkImage(
-                      '${model.profileImage}', // Replace with user's profile picture URL
+                      '${userModel.profileImage}',
                     ),
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    '${model.userName}',
-                    style: TextStyle(color: Colors.black, fontSize: 16),
+                    '${userModel.userName}',
+                    style: const TextStyle(color: Colors.black, fontSize: 16),
                   ),
                 ],
               ),
@@ -56,115 +68,100 @@ class ChatScreen extends StatelessWidget {
                 ),
               ],
             ),
-            body:  Column(
-                  children: [
-                    Expanded(
-                      child: ListView.separated(
-                        itemCount: cubit.messagesList.length,
-                        itemBuilder: (context, index) {
-                        
-                          return buildMessageBubble(
-                            chatModel: cubit.messagesList[index],
-                            isSender: true,
+            body: Column(
+              children: [
+                // Chat Messages List
+                Expanded(
+                  child: BlocBuilder<ChatCubit, ChatState>(
+                    builder: (context, state) {
+                      final chatCubit = ChatCubit.get(context);
+
+                      if (state is GetMessageSuccessState) {
+                        return ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                              vertical: 10, horizontal: 10),
+                          itemCount: state.messagesList.length,
+                          itemBuilder: (context, index) {
+                            final ChatModel message = state.messagesList[index];
+                            final isSender =
+                                message.senderId == currentUserModel.uid;
+                            return Align(
+                              alignment: isSender
+                                  ? Alignment.centerRight
+                                  : Alignment
+                                      .centerLeft, // Align messages accordingly
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 5),
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color:
+                                      isSender ? Colors.blue : Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  message.message!,
+                                  style: TextStyle(
+                                    color:
+                                        isSender ? Colors.white : Colors.black,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }
+
+                      return const Center(child: CircularProgressIndicator());
+                    },
+                  ),
+                ),
+
+                // Input Field with Send Button
+                Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: _messageController,
+                          decoration: InputDecoration(
+                            hintText: "Type your message...",
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(30),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      BlocBuilder<UserCubit, UserState>(
+                        builder: (context, state) {
+                          return IconButton(
+                            icon: const Icon(Icons.send, color: Colors.blue),
+                            onPressed: () {
+                              final messageText =
+                                  _messageController.text.trim();
+
+                              if (messageText.isNotEmpty) {
+                                ChatCubit.get(context).sendMessage(
+                                  senderId:
+                                      UserCubit.get(context).currentUser!.uid!,
+                                  receiverId: userModel.uid!,
+                                  dateTime: DateTime.now().toIso8601String(),
+                                  message: messageText,
+                                );
+                                _messageController.clear();
+                              }
+                            },
                           );
                         },
-                        separatorBuilder: (context, index) {
-                          return SizedBox(height: 3);
-                        },
                       ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8,vertical: 5),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Colors.grey,
-                            width: .5,
-                          ),
-                          borderRadius: BorderRadius.circular(50),
-                        ),
-                        clipBehavior:Clip.antiAliasWithSaveLayer,
-                        child: Row(
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.camera_alt_outlined,
-                                  color: Colors.black54),
-                              onPressed: () {},
-                            ),
-                            Expanded(
-                              child: TextField(
-                                controller: messageController,
-                                decoration: InputDecoration(
-                                  hintText: "Message...",
-                                  hintStyle:
-                                      const TextStyle(color: Colors.black54),
-                                  border: InputBorder.none,
-                                ),
-                               
-                              ),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.send, color: Colors.blue),
-                              onPressed: () {
-                                AppCubit.get(context).sendMessage(
-                                  reciverId: model.uId!,
-                                  dateTime: DateTime.now().toString(),
-                                  message: messageController.text,
-                                );
-                                messageController.clear();
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  ],
-                )
+                    ],
+                  ),
+                ),
+              ],
+            ),
           );
         },
-      );
-    });
-  }
-
-  Widget buildMessageBubble({
-    required bool isSender,
-    required ChatModel chatModel,
-  }) {
-    return Align(
-      alignment: isSender ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSender ? Colors.blue : Colors.grey[300],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(12),
-            topRight: Radius.circular(12),
-            bottomLeft: isSender ? Radius.circular(12) : Radius.zero,
-            bottomRight: isSender ? Radius.zero : Radius.circular(12),
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment:
-              isSender ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-          children: [
-            Text(
-              chatModel.message!,
-              style: TextStyle(
-                color: isSender ? Colors.white : Colors.black,
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              chatModel.dateTime!,
-              style: TextStyle(
-                color: isSender ? Colors.white60 : Colors.black54,
-                fontSize: 10,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

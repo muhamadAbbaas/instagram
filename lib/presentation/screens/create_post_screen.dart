@@ -1,63 +1,53 @@
-// ignore_for_file: prefer_const_constructors, avoid_print, unused_local_variable
+// ignore_for_file: must_be_immutable, prefer_const_constructors, avoid_print
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
+import 'package:instagram/logic/state_managments/post_cubit/post_cubit.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
+import 'package:video_player/video_player.dart';
 
 class CreatePostScreen extends StatelessWidget {
   CreatePostScreen({super.key});
 
   final TextEditingController captionController = TextEditingController();
+  VideoPlayerController? _videoController;
+  String? postType;
+
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<AppCubit, AppState>(
+    return BlocConsumer<PostCubit, PostState>(
       listener: (context, state) {
-        if (state is UploadPostImageLoadingState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Waiting for uploading your post...",
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.blue,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+        if (state is PostCreatingState) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) {
+              return const Center(child: CircularProgressIndicator());
+            },
           );
-        }
-        if (state is CreatePostSuccessState) {
+        } else if (state is PostCreatedState) {
+          Navigator.pop(context); // Close the loading dialog
+          Navigator.pop(context); // Go back to the previous screen
+        } else if (state is PostLoadedErrorState) {
+          Navigator.pop(context); // Close the loading dialog
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Post Uploaded Successfully...",
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.green,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
+            SnackBar(content: Text(state.error)),
           );
         }
       },
       builder: (context, state) {
-        var cubit = AppCubit.get(context);
-        var dateTime = DateTime.now();
+        var cubit = PostCubit.get(context);
+
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: Colors.white,
-            elevation: 1,
+            backgroundColor: Theme.of(context).appBarTheme.backgroundColor,
+            foregroundColor: Theme.of(context).appBarTheme.foregroundColor,
             title: Text(
               'New Post',
               style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 22),
+                fontWeight: FontWeight.bold,
+                fontSize: 22,
+              ),
             ),
           ),
           body: SingleChildScrollView(
@@ -67,8 +57,23 @@ class CreatePostScreen extends StatelessWidget {
                   alignment: AlignmentDirectional.topEnd,
                   children: [
                     GestureDetector(
-                      onTap: cubit.pickPostImage,
-                      child: cubit.postImage == null
+                      onTap: () async {
+                        await cubit.pickMedia();
+
+                        // Initialize video player if the picked media is a video
+                        if (cubit.postMedia != null &&
+                            cubit.postMedia!.path.contains('VID')) {
+                          _videoController =
+                              VideoPlayerController.file(cubit.postMedia!)
+                                ..initialize().then((_) {
+                                  postType = 'vedio';
+                                  _videoController!
+                                      .play(); // Autoplay the video
+                                });
+                        }
+                        postType = 'image';
+                      },
+                      child: cubit.postMedia == null
                           ? Container(
                               height: 200,
                               color: Colors.grey[300],
@@ -80,19 +85,31 @@ class CreatePostScreen extends StatelessWidget {
                                 ),
                               ),
                             )
-                          : Image.file(
-                              cubit.postImage!,
-                              height: 200,
-                              width: double.infinity,
-                              fit: BoxFit.cover,
-                            ),
+                          : cubit.postMedia!.path.contains('VID')
+                              ? _videoController != null &&
+                                      _videoController!.value.isInitialized
+                                  ? AspectRatio(
+                                      aspectRatio:
+                                          _videoController!.value.aspectRatio,
+                                      child: VideoPlayer(_videoController!),
+                                    )
+                                  : Center(child: CircularProgressIndicator())
+                              : Image.file(
+                                  cubit.postMedia!,
+                                  height: 200,
+                                  width: double.infinity,
+                                  fit: BoxFit.cover,
+                                ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        cubit.removeImage();
-                      },
-                      icon: Icon(Icons.close),
-                    ),
+                    if (cubit.postMedia != null)
+                      IconButton(
+                        onPressed: () {
+                          cubit.removeMedia();
+                          _videoController?.dispose();
+                          _videoController = null;
+                        },
+                        icon: Icon(Icons.close),
+                      ),
                   ],
                 ),
                 Padding(
@@ -110,7 +127,6 @@ class CreatePostScreen extends StatelessWidget {
                   leading: Icon(Icons.location_on),
                   title: Text('Add Location'),
                   onTap: () {
-                    // Navigate to location picker (optional)
                     print('Location clicked');
                   },
                 ),
@@ -118,16 +134,18 @@ class CreatePostScreen extends StatelessWidget {
                   leading: Icon(Icons.person_add),
                   title: Text('Tag People'),
                   onTap: () {
-                    // Navigate to tagging screen (optional)
                     print('Tag People clicked');
                   },
                 ),
                 TextButton(
                   onPressed: () {
-                    cubit.uploadPostImage(
-                      dateTime.toString(),
+                    final currentUser =
+                        BlocProvider.of<UserCubit>(context).currentUser;
+                    cubit.uploadPostMedia(
                       captionController.text,
-                      cubit.postImage!,
+                      cubit.postMedia!,
+                      postType!,
+                      currentUser!.uid!,
                     );
                   },
                   style: TextButton.styleFrom(
@@ -136,9 +154,8 @@ class CreatePostScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                       foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue, // Text color
-                      side: const BorderSide(
-                          color: Colors.blue, width: 2), // Border
+                      backgroundColor: Colors.blue,
+                      side: const BorderSide(color: Colors.blue, width: 2),
                       padding: const EdgeInsets.all(10),
                       shape: RoundedRectangleBorder(
                         borderRadius:
