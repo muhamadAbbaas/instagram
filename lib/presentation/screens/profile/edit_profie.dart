@@ -1,47 +1,82 @@
-// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, avoid_unnecessary_containers, sized_box_for_whitespace, unused_local_variable, unnecessary_null_comparison
+// ignore_for_file: prefer_const_literals_to_create_immutables, prefer_const_constructors, avoid_unnecessary_containers, sized_box_for_whitespace, unused_local_variable, unnecessary_null_comparison, use_build_context_synchronously
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:instagram/logic/model/user/user_model.dart';
+import 'package:instagram/logic/state_managments/post_cubit/post_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
+import 'package:instagram/presentation/widgets/profile_widgets.dart';
 
-class EditProfileScreen extends StatelessWidget {
+class EditProfileScreen extends StatefulWidget {
   final UserModel? userModel;
-  final TextEditingController fullNameController = TextEditingController();
-  final TextEditingController userNameController = TextEditingController();
-  final TextEditingController webSiteController = TextEditingController();
-  final TextEditingController bioController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController phoneController = TextEditingController();
-  final TextEditingController genderController = TextEditingController();
-  EditProfileScreen({super.key, this.userModel});
+
+  const EditProfileScreen({super.key, this.userModel});
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late final TextEditingController _fullNameController;
+  late final TextEditingController _userNameController;
+  late final TextEditingController _webSiteController;
+  late final TextEditingController _bioController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _phoneController;
+  late final TextEditingController _genderController;
+
+  @override
+  void initState() {
+    super.initState();
+    _fullNameController = TextEditingController();
+    _userNameController = TextEditingController();
+    _webSiteController = TextEditingController();
+    _bioController = TextEditingController();
+    _emailController = TextEditingController();
+    _phoneController = TextEditingController();
+    _genderController = TextEditingController();
+
+    _initializeControllers();
+  }
+
+  void _initializeControllers() {
+    final cubit = context.read<UserCubit>(); 
+    _fullNameController.text =
+        cubit.currentUser?.fullName ?? ''; 
+    _userNameController.text = cubit.currentUser?.userName ?? '';
+    _emailController.text = cubit.currentUser?.email ?? '';
+    _webSiteController.text = cubit.currentUser?.website ?? '';
+    _genderController.text = cubit.currentUser?.gender ?? '';
+    _bioController.text = cubit.currentUser?.bio ?? '';
+    _phoneController.text = cubit.currentUser?.phone ?? '';
+  }
+
+  @override
+  void dispose() {
+    _fullNameController.dispose();
+    _userNameController.dispose();
+    _webSiteController.dispose();
+    _bioController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _genderController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<UserCubit, UserState>(
       listener: (context, state) {
         if (state is ProfileImageUploadingState) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                "Uploading your Profile Image...",
-                style: TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.blue,
-              duration: Duration(seconds: 3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              behavior: SnackBarBehavior.floating,
-              margin: EdgeInsets.all(16),
-            ),
-          );
+          showLoadingDialog(context, "Uploading your Profile Image...");
         }
-        if (state is ProfileImageUploadErrorState) {
+        if (state is ProfileImageUploadedState) {
+          hideDialog(context);
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                "Profile Image Uploaded Successfully...",
+                "Profile Image Uploaded Successfully!",
                 style: TextStyle(color: Colors.white),
               ),
               backgroundColor: Colors.green,
@@ -54,16 +89,30 @@ class EditProfileScreen extends StatelessWidget {
             ),
           );
         }
+        if (state is ProfileImageUploadErrorState) {
+          hideDialog(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                "Failed to upload profile image.",
+                style: TextStyle(color: Colors.white),
+              ),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 3),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              behavior: SnackBarBehavior.floating,
+              margin: EdgeInsets.all(16),
+            ),
+          );
+        }
+        if (state is UserDataUpdatedState) {
+          Navigator.pop(context);
+        }
       },
       builder: (context, state) {
-        var cubit = UserCubit.get(context);
-        fullNameController.text = cubit.currentUser!.fullName!;
-        userNameController.text = cubit.currentUser!.userName!;
-        emailController.text = cubit.currentUser!.email!;
-        webSiteController.text = cubit.currentUser!.website ?? '';
-        genderController.text = cubit.currentUser!.gender ?? '';
-        bioController.text = cubit.currentUser!.bio ?? '';
-        phoneController.text = cubit.currentUser!.phone ?? '';
+        var cubit =UserCubit.get(context);
         return Scaffold(
           appBar: AppBar(
             leading: Column(
@@ -78,43 +127,54 @@ class EditProfileScreen extends StatelessWidget {
                         fontSize: 16,
                       ),
                     ),
-                    onTap: () {}, //todo
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
                   ),
                 ),
               ],
             ),
             title: const Center(
-              child: Text(
-                'Edit profile',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+              child: Padding(
+                padding: EdgeInsets.only(left: 48.0),
+                child: Text(
+                  'Edit profile',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ),
             actions: [
-              TextButton(
-                onPressed: () {
-                  cubit.updateUserData(
-                    updatedFields: {
-                      'userName': userNameController.text,
-                      'fullName': fullNameController.text,
-                      'bio': bioController.text,
-                      'email': emailController.text,
-                      'website': webSiteController.text,
-                      'phone': phoneController.text,
-                      'gender': genderController.text,
+              BlocBuilder<PostCubit, PostState>(
+                builder: (context, state) {
+                  return TextButton(
+                    onPressed: () {
+                      cubit.updateUserData(
+                        updatedFields: {
+                          'userName': _userNameController.text,
+                          'fullName': _fullNameController.text,
+                          'bio': _bioController.text,
+                          'email': _emailController.text,
+                          'website': _webSiteController.text,
+                          'phone': _phoneController.text,
+                          'gender': _genderController.text,
+                        },
+                      );
                     },
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 30.0),
+                      child: Text(
+                        'Done',
+                        style: TextStyle(
+                          color: Colors.blue[600],
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
                   );
-                  Navigator.pop(context);
                 },
-                child: Text(
-                  'Done',
-                  style: TextStyle(
-                    color: Colors.blue[600],
-                    fontSize: 16,
-                  ),
-                ),
               ),
             ],
           ),
@@ -125,18 +185,35 @@ class EditProfileScreen extends StatelessWidget {
                 width: double.infinity,
                 child: Column(
                   children: [
-                    Container(
-                      height: 98.74,
-                      width: 98.8,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.all(Radius.circular(50)),
-                        image: DecorationImage(
-                          fit: BoxFit.cover,
-                          image: cubit.profileImage == null
-                              ? NetworkImage(cubit.currentUser!.profileImage!)
-                              : FileImage(cubit.profileImage!),
+                    Stack(
+                      alignment: AlignmentDirectional.bottomEnd,
+                      children: [
+                        Container(
+                          height: 98.74,
+                          width: 98.8,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.all(Radius.circular(50)),
+                            image: DecorationImage(
+                              fit: BoxFit.cover,
+                              image: cubit.profileImage == null
+                                  ? NetworkImage(
+                                      cubit.currentUser!.profileImage!,
+                                    )
+                                  : FileImage(cubit.profileImage!),
+                            ),
+                          ),
                         ),
-                      ),
+                        if (cubit.profileImage != null)
+                          IconButton(
+                            onPressed: () {
+                              cubit.removeMedia();
+                            },
+                            icon: Icon(
+                              Icons.delete_forever,
+                              color: Colors.black54,
+                            ),
+                          ),
+                      ],
                     ),
                     SizedBox(
                       height: 5,
@@ -147,6 +224,9 @@ class EditProfileScreen extends StatelessWidget {
                           onPressed: () {
                             cubit.pickProfileImage();
                           },
+                          style: TextButton.styleFrom(
+                            minimumSize: Size(300, 40),
+                          ),
                           child: Text('Change profile photo'),
                         ),
                         if (cubit.profileImage != null)
@@ -156,6 +236,9 @@ class EditProfileScreen extends StatelessWidget {
                                 uid: cubit.currentUser!.uid!,
                               );
                             },
+                            style: TextButton.styleFrom(
+                              minimumSize: Size(300, 40),
+                            ),
                             child: Text('Upload profile photo'),
                           ),
                       ],
@@ -183,9 +266,9 @@ class EditProfileScreen extends StatelessWidget {
                                         start: 25),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        userModel!.fullName = value;
+                                        widget.userModel!.fullName = value;
                                       },
-                                      controller: fullNameController,
+                                      controller: _fullNameController,
                                       keyboardType: TextInputType.text,
                                       decoration: InputDecoration(
                                         label: Text('name'),
@@ -211,12 +294,13 @@ class EditProfileScreen extends StatelessWidget {
                                 Expanded(
                                   child: Padding(
                                     padding: const EdgeInsetsDirectional.only(
-                                        start: 25),
+                                      start: 25,
+                                    ),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        userModel!.userName = value;
+                                        widget.userModel!.userName = value;
                                       },
-                                      controller: userNameController,
+                                      controller: _userNameController,
                                       keyboardType: TextInputType.text,
                                       decoration: InputDecoration(
                                         label: Text('username'),
@@ -242,12 +326,13 @@ class EditProfileScreen extends StatelessWidget {
                                 Expanded(
                                   child: Padding(
                                     padding: const EdgeInsetsDirectional.only(
-                                        start: 25),
+                                      start: 25,
+                                    ),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        userModel!.website = value;
+                                        widget.userModel!.website = value;
                                       },
-                                      controller: webSiteController,
+                                      controller: _webSiteController,
                                       keyboardType: TextInputType.text,
                                       decoration: InputDecoration(
                                         label: Text('website'),
@@ -273,12 +358,13 @@ class EditProfileScreen extends StatelessWidget {
                                 Expanded(
                                   child: Padding(
                                     padding: const EdgeInsetsDirectional.only(
-                                        start: 25),
+                                      start: 25,
+                                    ),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        userModel!.bio = value;
+                                        widget.userModel!.bio = value;
                                       },
-                                      controller: bioController,
+                                      controller: _bioController,
                                       keyboardType: TextInputType.text,
                                       decoration: InputDecoration(
                                         label: Text('bio'),
@@ -344,12 +430,13 @@ class EditProfileScreen extends StatelessWidget {
                                   Expanded(
                                     child: Padding(
                                       padding: const EdgeInsetsDirectional.only(
-                                          start: 25),
+                                        start: 25,
+                                      ),
                                       child: TextField(
                                         onSubmitted: (value) {
-                                          userModel!.email = value;
+                                          widget.userModel!.email = value;
                                         },
-                                        controller: emailController,
+                                        controller: _emailController,
                                         keyboardType: TextInputType.text,
                                         decoration: InputDecoration(
                                           label: Text('email'),
@@ -376,12 +463,13 @@ class EditProfileScreen extends StatelessWidget {
                                 Expanded(
                                   child: Padding(
                                     padding: const EdgeInsetsDirectional.only(
-                                        start: 25),
+                                      start: 25,
+                                    ),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        userModel!.phone = value;
+                                        widget.userModel!.phone = value;
                                       },
-                                      controller: phoneController,
+                                      controller: _phoneController,
                                       keyboardType: TextInputType.phone,
                                       decoration: InputDecoration(
                                         label: Text('phone'),
@@ -407,12 +495,13 @@ class EditProfileScreen extends StatelessWidget {
                                 Expanded(
                                   child: Padding(
                                     padding: const EdgeInsetsDirectional.only(
-                                        start: 25),
+                                      start: 25,
+                                    ),
                                     child: TextField(
                                       onSubmitted: (value) {
-                                        userModel!.gender = value;
+                                        widget.userModel!.gender = value;
                                       },
-                                      controller: genderController,
+                                      controller: _genderController,
                                       keyboardType: TextInputType.text,
                                       decoration: InputDecoration(
                                         label: Text('gender'),

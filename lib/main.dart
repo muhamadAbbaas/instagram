@@ -5,22 +5,23 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:instagram/constants/themes.dart';
+import 'package:instagram/logic/state_managments/chat_cubit/chat_cubit.dart';
 import 'package:instagram/logic/state_managments/story_cubit/story_cubit.dart';
 import 'package:instagram/logic/state_managments/theme_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
 import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
 import 'package:instagram/logic/state_managments/post_cubit/post_cubit.dart';
-import 'package:instagram/presentation/screens/chat_list_screen.dart';
-import 'package:instagram/presentation/screens/chat_screen.dart';
-import 'package:instagram/presentation/screens/login_screen.dart';
-import 'package:instagram/presentation/screens/signup_screen.dart';
+import 'package:instagram/presentation/screens/chat/chat_list_screen.dart';
+import 'package:instagram/presentation/screens/chat/chat_screen.dart';
+import 'package:instagram/presentation/screens/auth/login_screen.dart';
+import 'package:instagram/presentation/screens/auth/signup_screen.dart';
 import 'package:instagram/constants/consatant.dart';
 import 'package:instagram/data/local/cash_helper.dart';
-import 'package:instagram/presentation/screens/profile.dart';
+import 'package:instagram/presentation/screens/profile/profile.dart';
 import 'package:instagram/presentation/screens/home_layout_screen.dart';
-import 'package:instagram/presentation/screens/edit_profie.dart';
-import 'package:instagram/presentation/screens/other_user_profile.dart';
-import 'package:instagram/presentation/widgets/app_entry.dart';
+import 'package:instagram/presentation/screens/profile/edit_profie.dart';
+import 'package:instagram/presentation/screens/profile/other_profile.dart';
+import 'package:instagram/presentation/screens/app_entry.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'firebase_options.dart';
@@ -49,15 +50,9 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid; 
-
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) => UserCubit()
-            ..checkLoginStatus()
-            ..getUserData(uid!),
-        ),
+        BlocProvider(create: (context) => UserCubit()..checkLoginStatus()),
         BlocProvider(
           create: (context) => PostCubit(),
         ),
@@ -66,6 +61,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider(
           create: (context) => AppCubit(),
+        ),
+        BlocProvider(
+          create: (context) => ChatCubit(),
         ),
       ],
       child: BlocBuilder<ThemeCubit, ThemeMode>(

@@ -3,15 +3,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:instagram/logic/state_managments/post_cubit/post_cubit.dart';
-import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
 import 'package:instagram/presentation/widgets/post_widget.dart';
 
-class UserPostDetailsScreen extends StatelessWidget {
+class UserPostsListScreen extends StatelessWidget {
   final String clickedUserId;
   final String clickedPostId;
   final String currentUserId;
 
-  UserPostDetailsScreen({
+  UserPostsListScreen({
     super.key,
     required this.clickedUserId,
     required this.clickedPostId,
@@ -20,6 +19,7 @@ class UserPostDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    BlocProvider.of<PostCubit>(context).getSpecificUserData(clickedUserId);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -31,23 +31,15 @@ class UserPostDetailsScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: MultiBlocProvider(
-        providers: [
-          BlocProvider(create: (context) => UserCubit()),
-          BlocProvider(
-              create: (context) =>
-                  PostCubit()..getSpecificUserData(clickedUserId)),
-        ],
-        child: BlocBuilder<PostCubit, PostState>(
-          builder: (context, state) {
-            return buildUserPostsDetailsScreen(
-              context: context,
-              state: state,
-              clickedPostId: clickedPostId,
-              currentUserId: currentUserId,
-            );
-          },
-        ),
+      body: BlocBuilder<PostCubit, PostState>(
+        builder: (context, state) {
+          return buildUserPostsListScreen(
+            context: context,
+            state: state,
+            clickedPostId: clickedPostId,
+            currentUserId: currentUserId,
+          );
+        },
       ),
     );
   }

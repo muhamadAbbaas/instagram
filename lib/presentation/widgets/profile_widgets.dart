@@ -1,15 +1,39 @@
-// ignore_for_file: prefer_const_constructors, unused_element, await_only_futures, use_build_context_synchronously
+// ignore_for_file: prefer_const_constructors, unused_element, await_only_futures, use_build_context_synchronously, deprecated_member_use, prefer_const_literals_to_create_immutables
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/data/local/cash_helper.dart';
 import 'package:instagram/logic/model/post/post_model.dart';
 import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
 import 'package:instagram/logic/state_managments/post_cubit/post_cubit.dart';
 import 'package:instagram/logic/state_managments/theme_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
-import 'package:instagram/presentation/screens/user_post_details_screen.dart';
-import 'package:instagram/presentation/widgets/post_widget.dart';
+import 'package:instagram/presentation/screens/post/user_post_details_screen.dart';
+import 'package:video_player/video_player.dart';
+
+void showLoadingDialog(BuildContext context, String message) {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        content: Row(
+          children: [
+            CircularProgressIndicator(color: Colors.blue),
+            SizedBox(width: 16),
+            Text(message),
+          ],
+        ),
+      );
+    },
+  );
+}
+
+void hideDialog(BuildContext context) {
+  if (Navigator.of(context).canPop()) {
+    Navigator.of(context).pop();
+  }
+}
 
 Widget buildInfo(String label, String? count) {
   return Column(
@@ -33,16 +57,18 @@ Widget buildDrawer(BuildContext context) {
           leading: const Icon(Icons.logout),
           title: const Text("Logout"),
           onTap: () async {
-            await UserCubit.get(context).logout;
-            CacheHelper.deleteData(key: 'uId');
-            Navigator.pushReplacementNamed(context, 'login');
+            await context.read<UserCubit>().logout(context);
           },
         ),
         ListTile(
           leading: const Icon(Icons.brightness_6),
-          title: const Text("Dark Theme"),
+          title: Text(
+            Theme.of(context).brightness == Brightness.dark
+                ? "Light Theme"
+                : "Dark Theme",
+          ),
           onTap: () {
-            BlocProvider.of<ThemeCubit>(context).toggleTheme(); 
+            context.read<ThemeCubit>().toggleTheme();
           },
         ),
       ],
@@ -50,7 +76,7 @@ Widget buildDrawer(BuildContext context) {
   );
 }
 
-Widget buildTabViewPosts(PostCubit postCubit, String currentUserId) {
+Widget buildUserPosts(PostCubit postCubit, String currentUserId) {
   return BlocBuilder<PostCubit, PostState>(
     builder: (context, postState) {
       if (postState is PostLoadingState) {
@@ -85,13 +111,13 @@ Widget buildPostsGrid(List<PostModel> posts, String currentUserId) {
         itemBuilder: (context, index) {
           return GestureDetector(
             onTap: () {
-              AppCubit.get(context).navigateToOverlayScreen(
-                UserPostDetailsScreen(
-                  clickedPostId: posts[index].postId,
-                  clickedUserId: posts[index].uid,
-                  currentUserId: currentUserId,
-                ),
-              );
+              context.read<AppCubit>().navigateToOverlayScreen(
+                    UserPostsListScreen(
+                      clickedPostId: posts[index].postId,
+                      clickedUserId: posts[index].uid,
+                      currentUserId: currentUserId,
+                    ),
+                  );
             },
             child: PostMediaThumbnail(post: posts[index]),
           );
@@ -122,4 +148,58 @@ Widget buildEmptyState(String message) {
       ),
     ),
   );
+}
+
+class PostMediaThumbnail extends StatefulWidget {
+  final PostModel post;
+  const PostMediaThumbnail({super.key, required this.post});
+  @override
+  State<PostMediaThumbnail> createState() => _PostMediaThumbnailState();
+}
+
+class _PostMediaThumbnailState extends State<PostMediaThumbnail> {
+  VideoPlayerController? _videoController;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.post.postType == 'vedio') {
+      _videoController = VideoPlayerController.network(widget.post.postImage)
+        ..initialize().then((_) {
+          setState(() {});
+        })
+        ..setLooping(true);
+    }
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.post.postType == 'vedio' && _videoController != null) {
+      return _videoController!.value.isInitialized
+          ? AspectRatio(
+              aspectRatio: _videoController!.value.aspectRatio,
+              child: VideoPlayer(_videoController!),
+            )
+          : Container(
+              color: Colors.black,
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
+    } else {
+      return Image.network(
+        widget.post.postImage,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => const Icon(
+          Icons.broken_image,
+          size: 40,
+        ),
+      );
+    }
+  }
 }

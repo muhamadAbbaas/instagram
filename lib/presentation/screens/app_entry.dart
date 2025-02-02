@@ -5,8 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
 import 'package:instagram/presentation/screens/home_layout_screen.dart';
-import 'package:instagram/presentation/screens/login_screen.dart';
-import 'package:instagram/presentation/screens/splach_screen.dart';
+import 'package:instagram/presentation/screens/auth/login_screen.dart';
 
 class AppEntry extends StatelessWidget {
   @override
@@ -14,15 +13,16 @@ class AppEntry extends StatelessWidget {
     return BlocBuilder<UserCubit, UserState>(
       builder: (context, state) {
         if (state is CheckLoginStatusLoadingState) {
-          return SplashScreen(); // Show loading screen
+          return Center(child: CircularProgressIndicator());
         } else if (state is CheckLoginStatusSuccessState) {
-          return HomeLayoutScreen(); // Navigate to home screen
-        } else {
-          // Default to login screen if no user is logged in or an error occurs
+          return HomeLayoutScreen();
+        } else if (state is CheckLoginStatusErrorState ||
+            UserCubit.get(context).currentUser == null) {
           return LoginScreen();
+        } else {
+          return Center(child: CircularProgressIndicator());
         }
       },
     );
   }
 }
-

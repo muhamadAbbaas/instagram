@@ -36,7 +36,9 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_bloc: ^8.1.6
+  font_awesome_flutter: ^10.8.0
   image_picker: ^1.1.2
+  rxdart: ^0.28.0
   shared_preferences: ^2.3.2
   supabase_flutter: ^2.8.1
   video_player: ^2.9.2
@@ -67,10 +69,10 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
+  fonts:
+    - family: GrandHotel
+      fonts:
+        - asset: assets/fonts/GrandHotel-Regular.ttf
   #       - asset: fonts/Schyler-Italic.ttf
   #         style: italic
   #   - family: Trajan Pro

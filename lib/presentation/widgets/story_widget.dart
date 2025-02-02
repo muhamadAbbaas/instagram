@@ -6,10 +6,11 @@ import 'package:instagram/logic/model/story/story_model.dart';
 import 'package:instagram/logic/model/user/user_model.dart';
 import 'package:instagram/logic/state_managments/story_cubit/story_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
-import 'package:instagram/presentation/screens/create_story_screen.dart';
-import 'package:instagram/presentation/screens/view_story_screen.dart';
+import 'package:instagram/presentation/screens/story/create_story_screen.dart';
+import 'package:instagram/presentation/screens/story/view_story_screen.dart';
 
 Widget currentUserWithStory({
+  required UserModel userModel,
   required StoryModel story,
   required BuildContext context,
 }) {
@@ -50,7 +51,7 @@ Widget currentUserWithStory({
               ),
               CircleAvatar(
                 radius: 35,
-                backgroundImage: NetworkImage(story.userImage),
+                backgroundImage: NetworkImage(userModel.profileImage!),
               ),
             ],
           ),
@@ -69,7 +70,7 @@ Widget currentUserWithOutStory({
   return Padding(
     padding: const EdgeInsets.only(left: 8.0, right: 5),
     child: GestureDetector(
-      onTap: () => StoryCubit.get(context).pickStoryImage(),
+      onTap: () => BlocProvider.of<StoryCubit>(context).pickStoryImage(),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -108,7 +109,7 @@ Widget otherStories({
 }) {
   return GestureDetector(
     onTap: () {
-      StoryCubit.get(context).markStoryAsWatched(story.storyId);
+      context.read<StoryCubit>().markStoryAsWatched(story.storyId);
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -177,9 +178,7 @@ Widget otherStories({
 }
 
 void onStoryPickedListener(BuildContext context, StoryPickedState state) {
-  final userCubit = BlocProvider.of<UserCubit>(context);
-  final user = userCubit.currentUser;
-
+  final user = context.read<UserCubit>().currentUser;
   if (user != null) {
     Navigator.push(
       context,

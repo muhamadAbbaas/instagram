@@ -18,10 +18,10 @@ class LoginScreen extends StatelessWidget {
     return BlocConsumer<UserCubit, UserState>(
       listener: (context, state) {
         if (state is LoginSuccessState) {
-          Navigator.push(
+          Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (_) {
-              final userCubit = BlocProvider.of<UserCubit>(context);
+              final userCubit = UserCubit.get(context);
               userCubit.getUserData(userCubit.auth.currentUser?.uid ?? "");
               return HomeLayoutScreen();
             }),
@@ -46,8 +46,9 @@ class LoginScreen extends StatelessWidget {
                     Text(
                       'Instagram',
                       style: TextStyle(
-                        fontSize: 35.0,
+                        fontSize: 70.0,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'GrandHotel',
                       ),
                     ),
                     SizedBox(
@@ -119,13 +120,18 @@ class LoginScreen extends StatelessWidget {
                           style: TextStyle(color: Colors.grey),
                         ),
                         TextButton(
-                          style: TextButton.styleFrom(
-                              foregroundColor: Colors.black),
+                          style: Theme.of(context).textButtonTheme.style,
                           onPressed: () {
                             Navigator.pushReplacementNamed(context, 'sign_up');
                           },
                           child: Text(
                             'Register Now',
+                            style: TextStyle(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
                           ),
                         ),
                       ],

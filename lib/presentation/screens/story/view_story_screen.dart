@@ -24,11 +24,9 @@ class _ViewStoryScreenState extends State<ViewStoryScreen>
   @override
   void initState() {
     super.initState();
-
-    // Initialize AnimationController for the progress bar
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5), // Duration of the countdown
+      duration: const Duration(seconds: 5), 
     )..forward();
 
     // Navigate back to the home screen when the animation completes

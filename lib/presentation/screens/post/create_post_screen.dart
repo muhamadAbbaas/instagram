@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:instagram/logic/state_managments/post_cubit/post_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
+import 'package:instagram/presentation/widgets/profile_widgets.dart';
 import 'package:video_player/video_player.dart';
 
 class CreatePostScreen extends StatelessWidget {
@@ -17,23 +18,45 @@ class CreatePostScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<PostCubit, PostState>(
       listener: (context, state) {
-        if (state is PostCreatingState) {
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) {
-              return const Center(child: CircularProgressIndicator());
-            },
-          );
-        } else if (state is PostCreatedState) {
-          Navigator.pop(context); // Close the loading dialog
-          Navigator.pop(context); // Go back to the previous screen
-        } else if (state is PostLoadedErrorState) {
-          Navigator.pop(context); // Close the loading dialog
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(state.error)),
-          );
-        }
+       if (state is PostUplodingState) {
+      showLoadingDialog(context,"Uploading your Post...");
+    }
+    if (state is PostUplodedState) {
+      hideDialog(context); 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Your Post Uploaded Successfully!",
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.green,
+          duration: Duration(seconds: 3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    }
+    if (state is PostUplodeErrorState) {
+      hideDialog(context); 
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Failed to upload your post.",
+            style: TextStyle(color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          behavior: SnackBarBehavior.floating,
+          margin: EdgeInsets.all(16),
+        ),
+      );
+    }
       },
       builder: (context, state) {
         var cubit = PostCubit.get(context);
@@ -59,7 +82,6 @@ class CreatePostScreen extends StatelessWidget {
                     GestureDetector(
                       onTap: () async {
                         await cubit.pickMedia();
-
                         // Initialize video player if the picked media is a video
                         if (cubit.postMedia != null &&
                             cubit.postMedia!.path.contains('VID')) {
@@ -68,7 +90,7 @@ class CreatePostScreen extends StatelessWidget {
                                 ..initialize().then((_) {
                                   postType = 'vedio';
                                   _videoController!
-                                      .play(); // Autoplay the video
+                                      .play(); 
                                 });
                         }
                         postType = 'image';
@@ -139,8 +161,7 @@ class CreatePostScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
-                    final currentUser =
-                        BlocProvider.of<UserCubit>(context).currentUser;
+                    final currentUser = UserCubit.get(context).currentUser;
                     cubit.uploadPostMedia(
                       captionController.text,
                       cubit.postMedia!,
@@ -159,9 +180,9 @@ class CreatePostScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(10),
                       shape: RoundedRectangleBorder(
                         borderRadius:
-                            BorderRadius.circular(8), // Rounded corners
+                            BorderRadius.circular(8), 
                       ),
-                      minimumSize: const Size(100, 30)),
+                      minimumSize: const Size(100, 40)),
                   child: Text('Share'),
                 ),
               ],

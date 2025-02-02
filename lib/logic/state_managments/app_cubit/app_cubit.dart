@@ -2,14 +2,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:instagram/presentation/screens/create_post_screen.dart';
-import 'package:instagram/presentation/screens/search_screen.dart';
+import 'package:instagram/presentation/screens/post/create_post_screen.dart';
+import 'package:instagram/presentation/screens/explore/search_screen.dart';
 import 'package:instagram/presentation/screens/new_feeds_screen.dart';
 import 'package:instagram/presentation/screens/notification_screen.dart';
-import 'package:instagram/presentation/screens/profile.dart';
+import 'package:instagram/presentation/screens/profile/profile.dart';
 
 part 'app_state.dart';
-
 
 class AppCubit extends Cubit<AppState> {
   AppCubit() : super(AppInitialState());
@@ -29,7 +28,7 @@ class AppCubit extends Cubit<AppState> {
   Widget? currentOverlayScreen;
 
   void changeBottomNavIndex(int index) {
-    currentOverlayScreen = null; // Reset overlay when switching tabs
+    currentOverlayScreen = null;
     currentIndex = index;
     emit(ChangeButtomNavSuccessState());
   }
@@ -43,6 +42,4 @@ class AppCubit extends Cubit<AppState> {
     currentOverlayScreen = null;
     emit(ChangeButtomNavSuccessState());
   }
-
-  
 }

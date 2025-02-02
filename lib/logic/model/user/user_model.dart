@@ -56,4 +56,32 @@ class UserModel {
       'following': following,
     };
   }
+
+  UserModel copyWith({
+    String? fullName,
+    String? email,
+    String? userName,
+    String? uid,
+    String? website,
+    String? bio,
+    String? phone,
+    String? gender,
+    String? profileImage,
+    List<String>? followers,
+    List<String>? following,
+  }) {
+    return UserModel(
+      fullName: fullName ?? this.fullName,
+      email: email ?? this.email,
+      userName: userName ?? this.userName,
+      website: website ?? this.website,
+      bio: bio ?? this.bio,
+      phone: phone ?? this.phone,
+      gender: gender ?? this.gender,
+      profileImage: profileImage ?? this.profileImage,
+      uid: uid ?? this.uid,
+      followers: followers ?? this.followers,
+      following: following ?? this.following,
+    );
+  }
 }

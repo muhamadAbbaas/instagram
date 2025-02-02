@@ -18,9 +18,8 @@ class PostCubit extends Cubit<PostState> {
 
   static PostCubit get(context) => BlocProvider.of(context);
 
-  File? postMedia; // Handle both image and video
+  File? postMedia;
   ImagePicker picker = ImagePicker();
-  PostModel? currentPost;
   final Map<String, List<PostModel>> userPosts = {};
 
   /// Function to pick media (image or video) from the gallery
@@ -30,22 +29,16 @@ class PostCubit extends Cubit<PostState> {
       final pickedFile = await picker.pickMedia();
       if (pickedFile != null) {
         postMedia = File(pickedFile.path);
-        print(
-            '3333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333 post media is ${postMedia}');
+        print('post media is ${postMedia}');
 
-        // Identify media type based on file extension or mime type
-
+        //check post type
         if (postMedia!.path.contains('IMG')) {
-          print(
-              "333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333Picked an image");
+          print("Picked an image");
         } else if (postMedia!.path.contains('VID')) {
-          print(
-              "333333333333333333333333333333333333333333333333333333333333333333333333333333333333 Picked a video");
+          print("Picked a video");
         } else {
-          print(
-              "333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333333Unknown media type");
+          print("Unknown media type");
         }
-
         emit(PostPickedState());
       } else {
         emit(PostPickedErrorState());
@@ -86,8 +79,6 @@ class PostCubit extends Cubit<PostState> {
           .collection('posts')
           .doc(postId)
           .set(post.toJson());
-
-      currentPost = post;
       emit(PostCreatedState(post));
     } catch (e) {
       emit(PostLoadedErrorState(e.toString()));
@@ -118,13 +109,10 @@ class PostCubit extends Cubit<PostState> {
         postType: postType,
         userId: userId,
       );
+      emit(PostUplodedState());
     } catch (e) {
       emit(PostUplodeErrorState());
     }
-  }
-
-  PostModel? getCurrentPost() {
-    return currentPost; // Getter for the current post
   }
 
   void toggleLike(PostModel post, String userId) async {
@@ -135,17 +123,23 @@ class PostCubit extends Cubit<PostState> {
     try {
       if (isLiked) {
         await _unlikePost(postRef, userId);
+        // Update local state
+        final updatedLikes = List<String>.from(post.likes)..remove(userId);
+        final updatedPost = post.copyWith(likes: updatedLikes);
+        emit(PostLikedState(postModel: updatedPost));
       } else {
         await _likePost(postRef, userId);
+        // Update local state
+        final updatedLikes = List<String>.from(post.likes)..add(userId);
+        final updatedPost = post.copyWith(likes: updatedLikes);
+        emit(PostLikedState(postModel: updatedPost));
       }
-
-      emit(PostLikedState());
     } catch (e) {
       emit(PostLikeErrorState(e.toString()));
     }
   }
 
-// Helper method to handle liking the post
+// Method to handle liking the post
   Future<void> _likePost(DocumentReference postRef, String userId) async {
     await postRef.update({
       'likes': FieldValue.arrayUnion([userId]),
@@ -154,7 +148,7 @@ class PostCubit extends Cubit<PostState> {
     getAllUsersPosts();
   }
 
-// Helper method to handle unliking the post
+// Method to handle unliking the post
   Future<void> _unlikePost(DocumentReference postRef, String userId) async {
     await postRef.update({
       'likes': FieldValue.arrayRemove([userId]),
@@ -163,56 +157,7 @@ class PostCubit extends Cubit<PostState> {
     getAllUsersPosts();
   }
 
-  void getSpecificUserData(String uid) async {
-    emit(PostLoadingState());
-    try {
-      // Fetch user data
-      final userSnapshot =
-          await FirebaseFirestore.instance.collection('users').doc(uid).get();
-      if (!userSnapshot.exists) {
-        throw Exception("User not found");
-      }
-      final user = UserModel.fromJson(userSnapshot.data()!);
-
-      // Fetch user posts
-      final postsSnapshot = await FirebaseFirestore.instance
-          .collection('posts')
-          .where('uid', isEqualTo: uid)
-          .get();
-      final posts = postsSnapshot.docs
-          .map((doc) => PostModel.fromJson(doc.data()))
-          .toList();
-
-      // Emit state with both user data and posts
-      emit(UserPostsWithDataLoadedState(user: user, posts: posts));
-    } catch (error) {
-      emit(PostLoadedErrorState(error.toString()));
-    }
-  }
-
-  void getPosts() {
-    emit(PostLoadingState());
-    FirebaseFirestore.instance.collection('posts').snapshots().listen(
-      (snapshot) {
-        if (snapshot.docs.isEmpty) {
-          print("No posts found."); // Debugging
-          emit(NoPostsState());
-        } else {
-          final posts = snapshot.docs
-              .map((doc) => PostModel.fromJson(doc.data()))
-              .toList();
-          print("Fetched posts: $posts"); // Debugging
-          emit(PostLoadedState(posts: posts));
-        }
-      },
-      onError: (error) {
-        print("Error fetching posts: $error"); // Debugging
-        emit(PostLoadedErrorState(error.toString()));
-      },
-    );
-  }
-
-  Future<void> getAllUsersPosts() async {
+  void getAllUsersPosts() async {
     emit(PostLoadingState());
     try {
       final userSnapshot =
@@ -240,6 +185,34 @@ class PostCubit extends Cubit<PostState> {
       emit(AllPostsWithUserLoadedState(postsWithUserData));
     } catch (e) {
       emit(PostLoadedErrorState(e.toString()));
+    }
+  }
+
+  void getSpecificUserData(String uid) async {
+    emit(UserDataLoadingState());
+    try {
+      final userSnapshot =
+          await FirebaseFirestore.instance.collection('users').doc(uid).get();
+
+      if (!userSnapshot.exists || userSnapshot.data() == null) {
+        emit(PostLoadedErrorState("User not found"));
+        return;
+      }
+      final user = UserModel.fromJson(userSnapshot.data()!);
+      final postsSnapshot = await FirebaseFirestore.instance
+          .collection('posts')
+          .where('uid', isEqualTo: uid)
+          .get();
+
+      final posts = postsSnapshot.docs
+          .map((doc) => PostModel.fromJson(doc.data()))
+          .toList();
+
+      emit(UserPostsWithDataLoadedState(user: user, posts: posts));
+    } catch (error, stackTrace) {
+      print("Error fetching user data: $error");
+      print("StackTrace: $stackTrace");
+      emit(PostLoadedErrorState(error.toString()));
     }
   }
 

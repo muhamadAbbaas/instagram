@@ -6,7 +6,7 @@ import 'package:instagram/logic/state_managments/post_cubit/post_cubit.dart';
 import 'package:instagram/presentation/widgets/post_widget.dart';
 
 class ExploreScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> postsWithUserData;
+  final List<Map<String, dynamic>?> postsWithUserData;
   final bool isVideo;
   final String currentUserId;
   final String clickedPostId;
@@ -36,8 +36,8 @@ class ExploreScreen extends StatelessWidget {
       body: ListView.builder(
           itemCount: postsWithUserData.length,
           itemBuilder: (context, index) {
-            final post = postsWithUserData[index]['post'] as PostModel;
-            final user = postsWithUserData[index]['user'] as UserModel;
+            final post = postsWithUserData[index]!['post'] as PostModel;
+            final user = postsWithUserData[index]!['user'] as UserModel;
 
             return PostWidget(
               postModel: post,

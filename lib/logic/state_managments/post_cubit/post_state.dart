@@ -27,7 +27,11 @@ class PostCreatedState extends PostState {
   PostCreatedState(this.posts);
 }
 
-class PostLikedState extends PostState {}
+class PostLikedState extends PostState {
+  final PostModel postModel;
+
+  PostLikedState({required this.postModel});
+}
 
 class PostLikeErrorState extends PostState {
   final String error;
@@ -38,12 +42,15 @@ class PostLoadingState extends PostState {}
 
 class NoPostsState extends PostState {}
 
+class UserDataLoadingState extends PostState {}
+
 class PostLoadedState extends PostState {
   final List<PostModel> posts;
   PostLoadedState({
     required this.posts,
   });
 }
+
 class UserPostsWithDataLoadedState extends PostState {
   final UserModel user;
   final List<PostModel> posts;
@@ -52,7 +59,7 @@ class UserPostsWithDataLoadedState extends PostState {
 }
 
 class AllPostsWithUserLoadedState extends PostState {
-  final List<Map<String, Object>> posts;
+  final List<Map<String, Object>?> posts;
   AllPostsWithUserLoadedState(
     this.posts,
   );
@@ -62,6 +69,7 @@ class PostLoadedErrorState extends PostState {
   final String error;
   PostLoadedErrorState(this.error);
 }
+
 class VideoInitializedState extends PostState {
   final String postId;
   VideoInitializedState(this.postId);

@@ -77,9 +77,9 @@ class ChatCubit extends Cubit<ChatState> {
         .collection('messages')
         .orderBy('dateTime')
         .snapshots()
-        .listen((event) {
+        .listen((messages) {
       final messagesList =
-          event.docs.map((doc) => ChatModel.fromJson(doc)).toList();
+          messages.docs.map((doc) => ChatModel.fromJson(doc)).toList();
       emit(GetMessageSuccessState(messagesList: messagesList));
     });
   }
@@ -102,7 +102,7 @@ class ChatCubit extends Cubit<ChatState> {
       if (querySnapshot.docs.isNotEmpty) {
         return ChatModel.fromJson(querySnapshot.docs.first);
       } else {
-        return null; // No messages found
+        return null; 
       }
     } catch (error) {
       print("Error fetching last message: $error");

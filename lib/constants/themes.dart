@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 final lightTheme = ThemeData(
-  primaryColor: Colors.blue,
+  primaryColor: Colors.blue[300],
   brightness: Brightness.light,
   scaffoldBackgroundColor: Colors.white,
   appBarTheme: const AppBarTheme(
@@ -16,22 +16,22 @@ final lightTheme = ThemeData(
   ),
   textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-    backgroundColor:  Colors.blue[300],
-    foregroundColor: Colors.white,
+    backgroundColor:  Colors.white,
+    foregroundColor: Colors.blue[300],
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3.0)),
     fixedSize: const Size(111, 30),
   )),
   bottomNavigationBarTheme: const BottomNavigationBarThemeData(
     type: BottomNavigationBarType.fixed,
     backgroundColor: Colors.white,
-    selectedItemColor: Colors.blue,
+    selectedItemColor: Colors.black,
     unselectedItemColor: Colors.grey,
     elevation: 10,
   ),
 );
 
 final darkTheme = ThemeData(
-  primaryColor: Colors.deepPurple,
+  primaryColor: Colors.blue[300],
   brightness: Brightness.dark,
   scaffoldBackgroundColor: Colors.black,
   appBarTheme: const AppBarTheme(
@@ -46,8 +46,8 @@ final darkTheme = ThemeData(
   ),
   textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(
-    backgroundColor:  Colors.blue[300],
-    foregroundColor: Colors.white,
+    backgroundColor:  Colors.black,
+    foregroundColor: Colors.blue,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(3.0)),
     fixedSize: const Size(111, 30),
   )),

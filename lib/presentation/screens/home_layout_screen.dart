@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:instagram/logic/state_managments/app_cubit/app_cubit.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
+import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
 
 class HomeLayoutScreen extends StatelessWidget {
   const HomeLayoutScreen({super.key});
@@ -10,14 +13,14 @@ class HomeLayoutScreen extends StatelessWidget {
     return BlocConsumer<AppCubit, AppState>(
       listener: (context, state) {},
       builder: (context, state) {
-        final appCubit = AppCubit.get(context);
+        final appCubit = context.read<AppCubit>(); 
 
         return Scaffold(
           body: Stack(
             children: [
-              appCubit.mainScreens[appCubit.currentIndex], // Main tab content
+              appCubit.mainScreens[appCubit.currentIndex], 
               if (appCubit.currentOverlayScreen != null)
-                appCubit.currentOverlayScreen!, // Overlay screen
+                appCubit.currentOverlayScreen!,
             ],
           ),
           bottomNavigationBar: BottomNavigationBar(
@@ -29,15 +32,40 @@ class HomeLayoutScreen extends StatelessWidget {
                 Theme.of(context).bottomNavigationBarTheme.backgroundColor,
             currentIndex: appCubit.currentIndex,
             onTap: appCubit.changeBottomNavIndex,
-            items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
-              BottomNavigationBarItem(icon: Icon(Icons.search), label: ''),
+            items: [
+              const BottomNavigationBarItem(
+                icon: FaIcon(FontAwesomeIcons.house),
+                label: '',
+              ),
+              const BottomNavigationBarItem(
+                icon: FaIcon(FontAwesomeIcons.magnifyingGlass),
+                label: '',
+              ),
+              const BottomNavigationBarItem(
+                icon: FaIcon(FontAwesomeIcons.squarePlus),
+                label: '',
+              ),
+              const BottomNavigationBarItem(
+                icon: FaIcon(FontAwesomeIcons.heart),
+                label: '',
+              ),
               BottomNavigationBarItem(
-                  icon: Icon(Icons.add_box_outlined), label: ''),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.favorite_border), label: ''),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.person_outline), label: ''),
+                icon: BlocBuilder<UserCubit, UserState>(
+                  builder: (context, state) {
+                    final userCubit = UserCubit.get(context);
+                    final profileImage = userCubit.currentUser?.profileImage;
+                    return CircleAvatar(
+                      radius: 12,
+                      backgroundImage: profileImage != null
+                          ? NetworkImage(profileImage)
+                          : const AssetImage('assets/images/download.jpg')
+                              as ImageProvider,
+                      backgroundColor: Colors.grey.shade300,
+                    );
+                  },
+                ),
+                label: '',
+              ),
             ],
           ),
         );

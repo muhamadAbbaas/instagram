@@ -57,6 +57,7 @@ class StoryCubit extends Cubit<StoryState> {
           .doc(story.storyId)
           .set(story.toJson());
       emit(StoryCreatedState(story));
+      getStories();
     } catch (e) {
       emit(StoryCreateErrorState(e.toString()));
     }
@@ -87,7 +88,6 @@ class StoryCubit extends Cubit<StoryState> {
         userImage: userImage,
         storyImage: publicUrl,
       );
-      getStories();
     } catch (e) {
       emit(StoryUploadErrorState("Failed to upload story image: $e"));
     }

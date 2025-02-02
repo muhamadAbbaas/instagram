@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_cubit.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
+import 'package:instagram/presentation/screens/auth/login_screen.dart';
 
 class SignUpScreen extends StatelessWidget {
   SignUpScreen({super.key});
@@ -19,7 +20,11 @@ class SignUpScreen extends StatelessWidget {
     return BlocConsumer<UserCubit, UserState>(
       listener: (context, state) {
         if (state is SignInSuccessState) {
-          Navigator.pushNamed(context, 'login');
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => LoginScreen(),
+              ));
         }
       },
       builder: (context, state) {
@@ -35,8 +40,9 @@ class SignUpScreen extends StatelessWidget {
                     Text(
                       'Instagram',
                       style: TextStyle(
-                        fontSize: 35.0,
+                        fontSize: 70.0,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'GrandHotel',
                       ),
                     ),
                     SizedBox(
@@ -50,7 +56,8 @@ class SignUpScreen extends StatelessWidget {
                       decoration: InputDecoration(
                         label: Text('Email'),
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       validator: (value) {
                         if (value!.isEmpty) {
@@ -66,7 +73,8 @@ class SignUpScreen extends StatelessWidget {
                       decoration: InputDecoration(
                         label: Text('Password'),
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       validator: (value) {
                         if (value!.isEmpty) {
@@ -82,7 +90,8 @@ class SignUpScreen extends StatelessWidget {
                       decoration: InputDecoration(
                         label: Text('Full Name'),
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       validator: (value) {
                         if (value!.isEmpty) {
@@ -98,7 +107,8 @@ class SignUpScreen extends StatelessWidget {
                       decoration: InputDecoration(
                         label: Text('Username'),
                         border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8)),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
                       validator: (value) {
                         if (value!.isEmpty) {
@@ -114,7 +124,8 @@ class SignUpScreen extends StatelessWidget {
                         backgroundColor: Colors.blue,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8.0)),
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
                         fixedSize: Size(400, 50),
                       ),
                       onPressed: () {
@@ -140,12 +151,18 @@ class SignUpScreen extends StatelessWidget {
                           style: TextStyle(color: Colors.grey),
                         ),
                         TextButton(
-                          style: TextButton.styleFrom(
-                              foregroundColor: Colors.black),
                           onPressed: () {
                             Navigator.pushReplacementNamed(context, 'login');
                           },
-                          child: Text('Login'),
+                          child: Text(
+                            'Login',
+                            style: TextStyle(
+                              color: Theme.of(context).brightness ==
+                                      Brightness.dark
+                                  ? Colors.white
+                                  : Colors.black,
+                            ),
+                          ),
                         ),
                       ],
                     ),

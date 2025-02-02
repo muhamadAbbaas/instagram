@@ -80,7 +80,9 @@ class CreateStoryScreen extends StatelessWidget {
                 child: Text(
                   "Share",
                   style: TextStyle(
-                      color: Colors.blue, fontWeight: FontWeight.bold),
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -91,10 +93,11 @@ class CreateStoryScreen extends StatelessWidget {
               GestureDetector(
                 onTap: () {},
                 child: Container(
-                    height: 300,
-                    width: double.infinity,
-                    color: Colors.grey[900],
-                    child: Image.file(selectedImage, fit: BoxFit.cover)),
+                  height: 300,
+                  width: double.infinity,
+                  color: Colors.grey[900],
+                  child: Image.file(selectedImage, fit: BoxFit.cover),
+                ),
               ),
 
               // Caption Input
@@ -116,8 +119,6 @@ class CreateStoryScreen extends StatelessWidget {
                   ),
                 ),
               ),
-
-              // Sticker and Additional Features Section (Optional)
               Expanded(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,

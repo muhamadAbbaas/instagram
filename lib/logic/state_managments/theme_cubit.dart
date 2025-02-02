@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:instagram/data/local/cash_helper.dart';
 
 class ThemeCubit extends Cubit<ThemeMode> {
   ThemeCubit() : super(ThemeMode.light) {
@@ -17,14 +17,14 @@ class ThemeCubit extends Cubit<ThemeMode> {
     }
   }
 
-  Future<void> _saveThemePreference({required bool isDarkMode}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('isDarkMode', isDarkMode);
+  Future<void> _saveThemePreference({
+    required bool isDarkMode,
+  }) async {
+    await CacheHelper.setData(key: 'isDarkMode', value: isDarkMode);
   }
 
   Future<void> _loadThemePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final isDarkMode = prefs.getBool('isDarkMode') ?? false;
+    final isDarkMode = CacheHelper.getData(key: 'isDarkMode') ?? false;
     emit(isDarkMode ? ThemeMode.dark : ThemeMode.light);
   }
 }

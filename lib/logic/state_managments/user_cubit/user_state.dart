@@ -45,9 +45,17 @@ class CheckLoginStatusErrorState extends UserState {
 
 class LoggedOutState extends UserState {}
 
+class LogOutErrorState extends UserState {
+  final String error;
+
+  LogOutErrorState(this.error);
+}
+
 class ProfileImagePickedState extends UserState {}
 
 class ProfileImagePickErrorState extends UserState {}
+
+class RemoveImageState extends UserState {}
 
 class ProfileImageUploadingState extends UserState {}
 
@@ -103,6 +111,7 @@ class FollowUserErrorState extends UserState {
 
   FollowUserErrorState(this.error);
 }
+
 class UnfollowUserSuccessState extends UserState {}
 
 class UnfollowUserErrorState extends UserState {

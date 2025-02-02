@@ -1,14 +1,16 @@
-// ignore_for_file: avoid_print, unnecessary_null_comparison, prefer_interpolation_to_compose_strings
+// ignore_for_file: avoid_print, unnecessary_null_comparison, prefer_interpolation_to_compose_strings, use_build_context_synchronously
 
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:instagram/data/local/cash_helper.dart';
 import 'package:instagram/logic/model/user/user_model.dart';
 import 'package:instagram/logic/state_managments/user_cubit/user_state.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:instagram/presentation/screens/auth/login_screen.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class UserCubit extends Cubit<UserState> {
@@ -42,7 +44,7 @@ class UserCubit extends Cubit<UserState> {
           phone: '',
           bio: '',
           website: '',
-          profileImage: '', // Default profile image
+          profileImage: '',
           followers: [],
           following: [],
         );
@@ -79,9 +81,7 @@ class UserCubit extends Cubit<UserState> {
             .get();
 
         currentUser = UserModel.fromJson(userDoc.data()!);
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('uid', user.uid);
-
+        await CacheHelper.setData(key: 'uid', value: user.uid);
         emit(LoginSuccessState(user.uid));
       }
     } catch (e) {
@@ -92,8 +92,7 @@ class UserCubit extends Cubit<UserState> {
   Future<void> checkLoginStatus() async {
     emit(CheckLoginStatusLoadingState());
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final storedUid = prefs.getString('uid');
+      final storedUid = CacheHelper.getData(key: 'uid');
 
       if (storedUid != null) {
         // Fetch user data using the stored UID
@@ -106,25 +105,28 @@ class UserCubit extends Cubit<UserState> {
           currentUser = UserModel.fromJson(userDoc.data()!);
           emit(CheckLoginStatusSuccessState(currentUser!));
         } else {
-          emit(CheckLoginStatusErrorState('User not found.'));
+          emit(CheckLoginStatusErrorState('User data not found.'));
         }
       } else {
         emit(CheckLoginStatusErrorState('No user logged in.'));
       }
     } catch (e) {
-      emit(CheckLoginStatusErrorState(e.toString()));
+      emit(CheckLoginStatusErrorState('An error occurred: ${e.toString()}'));
     }
   }
 
-  Future<void> logout() async {
-    await auth.signOut();
-    currentUser = null;
-
-    // Remove UID from SharedPreferences
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('uid');
-
-    emit(LoggedOutState());
+  Future<void> logout(BuildContext context) async {
+    try {
+      await CacheHelper.deleteData(key: 'uid');
+      currentUser = null;
+      emit(LoggedOutState());
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (route) => false,
+      );
+    } catch (e) {
+      emit(LogOutErrorState(e.toString()));
+    }
   }
 
   File? profileImage;
@@ -168,39 +170,48 @@ class UserCubit extends Cubit<UserState> {
     });
   }
 
+  void removeMedia() {
+    profileImage = null;
+    emit(RemoveImageState());
+  }
+
   void updateUserData({
     required Map<String, dynamic> updatedFields,
   }) async {
     if (currentUser == null) return;
+
     emit(UserDateUpdatingState());
+
     try {
       final userRef =
           FirebaseFirestore.instance.collection('users').doc(currentUser!.uid);
 
-      // Update Firestore with new fields
       await userRef.update(updatedFields);
-      getUserData(currentUser!.uid!);
-
+      await getUserData(currentUser!.uid!);
       emit(UserDataUpdatedState());
     } catch (e) {
       emit(UserDataUpdateErrorState(e.toString()));
     }
   }
 
-  void getUserData(String uid) async {
+  Future<void> getUserData(String uid) async {
     emit(GetUserDataLoadingState());
     try {
       final userDoc =
           await FirebaseFirestore.instance.collection('users').doc(uid).get();
 
       if (userDoc.exists && userDoc.data() != null) {
-        currentUser = UserModel.fromJson(userDoc.data()!);
-        emit(GetUserDataLoadedState(currentUser!));
+        final user = UserModel.fromJson(userDoc.data()!);
+        currentUser = user;
+        emit(GetUserDataLoadedState(user));
       } else {
-        emit(GetUserDataLoadErrorState("User not found."));
+        emit(GetUserDataLoadErrorState(
+            "User document not found or data is invalid."));
       }
+    } on FirebaseException catch (e) {
+      emit(GetUserDataLoadErrorState("Firestore Error: ${e.message}"));
     } catch (e) {
-      emit(GetUserDataLoadErrorState(e.toString()));
+      emit(GetUserDataLoadErrorState("An unexpected error occurred: $e"));
     }
   }
 
@@ -208,7 +219,6 @@ class UserCubit extends Cubit<UserState> {
     emit(GetAllUsersLoadingState());
 
     try {
-      // Fetch users from Firestore
       final snapshot =
           await FirebaseFirestore.instance.collection('users').get();
       final users =
@@ -219,7 +229,10 @@ class UserCubit extends Cubit<UserState> {
     }
   }
 
-  Future<void> followUser(String currentUserId, String targetUserId) async {
+  Future<void> followUser({
+    required String currentUserId,
+    required String targetUserId,
+  }) async {
     try {
       // Add target user ID to the "following" list of the current user
       await FirebaseFirestore.instance
@@ -243,7 +256,10 @@ class UserCubit extends Cubit<UserState> {
     }
   }
 
-  Future<void> unfollowUser(String currentUserId, String targetUserId) async {
+  Future<void> unfollowUser({
+    required String currentUserId,
+    required String targetUserId,
+  }) async {
     try {
       // Remove target user ID from the "following" list of the current user
       await FirebaseFirestore.instance
@@ -260,15 +276,10 @@ class UserCubit extends Cubit<UserState> {
           .update({
         'followers': FieldValue.arrayRemove([currentUserId]),
       });
-
       emit(UnfollowUserSuccessState());
     } catch (e) {
       emit(UnfollowUserErrorState(e.toString()));
     }
-  }
-
-  UserModel? getCurrentUser() {
-    return currentUser;
   }
 
   Future<int> getFollowersCount(String userId) async {
@@ -296,37 +307,12 @@ class UserCubit extends Cubit<UserState> {
       return 0;
     }
   }
-}
-  
-  // void updateUserData({
-  //   String? fullName,
-  //   String? email,
-  //   String? userName,
-  //   String? website,
-  //   String? bio,
-  //   String? phone,
-  //   String? gender,
-  //   String? profileImage,
-  // }) async {
-  //   userModel = UserModel(
-  //     fullName: fullName ?? userModel!.fullName,
-  //     email: email ?? userModel!.email,
-  //     userName: userName ?? userModel!.userName,
-  //     uid: userModel!.uId,
-  //     website: website ?? userModel!.website,
-  //     bio: bio ?? userModel!.bio,
-  //     phone: phone ?? userModel!.phone,
-  //     gender: gender ?? userModel!.gender,
-  //     profileImage: profileImage ?? userModel!.profileImage,
-  //   );
-  //   FirebaseFirestore.instance
-  //       .collection('userInfo')
-  //       .doc(userModel!.uId)
-  //       .update(userModel!.toMap())
-  //       .then((value) {
-  //     getUserData();
-  //   }).catchError((error) {
-  //     emit(UpdateUserDataErrorState());
-  //   });
-  // }
 
+  Future<void> initializeUser() async {
+    final storedUid = CacheHelper.getData(key: 'uid');
+
+    if (storedUid != null) {
+      await getUserData(storedUid);
+    }
+  }
+}
